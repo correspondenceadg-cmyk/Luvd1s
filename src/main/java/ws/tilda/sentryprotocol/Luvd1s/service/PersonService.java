@@ -5,6 +5,7 @@ import ws.tilda.sentryprotocol.Luvd1s.repository.PersonRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PersonService {
@@ -17,6 +18,10 @@ public class PersonService {
 
     public List<Person> findAll() {
         return people.findAll();
+    }
+
+    public Optional<Person> findById(Long id) {
+        return people.findById(id);
     }
 
     public Person save(Person person) {
