@@ -1,7 +1,7 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
-import ws.tilda.sentryprotocol.Luvd1s.data.PersonRepository;
+import ws.tilda.sentryprotocol.Luvd1s.repository.PersonRepository;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
