@@ -1,7 +1,6 @@
 package ws.tilda.sentryprotocol.Luvd1s;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.*;
-import
 
 import ws.tilda.sentryprotocol.Luvd1s.repository.*;
  org.springframework.boot.CommandLineRunner;
