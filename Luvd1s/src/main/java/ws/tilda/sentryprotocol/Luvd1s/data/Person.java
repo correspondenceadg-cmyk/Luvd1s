@@ -1,4 +1,4 @@
-package ws.tilda.sentryprotocol.luvd1s.data;
+package ws.tilda.sentryprotocol.Luvd1s.data;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
