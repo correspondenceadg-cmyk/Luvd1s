@@ -36,9 +36,9 @@ import java.util.List;
 public class PeopleView extends VerticalLayout {
 
     private static final int MAX_VISIBLE_ROWS = 20;
-    private static final int ROW_HEIGHT = 37;
-    private static final int HEADER_HEIGHT = 44;
-    private static final int BUFFER = 12;
+    private static final int ROW_HEIGHT = 44;
+    private static final int HEADER_HEIGHT = 48;
+    private static final int BUFFER = 8;
 
     private final PersonService personService;
     private final InteractionService interactionService;
@@ -73,7 +73,6 @@ public class PeopleView extends VerticalLayout {
         this.interactionService = interactionService;
         this.tagService = tagService;
 
-        setSizeFull();
         setPadding(true);
         setSpacing(true);
 
@@ -209,9 +208,14 @@ public class PeopleView extends VerticalLayout {
     }
 
     private void updateGridHeight(int rowCount) {
-        int visibleRows = Math.min(rowCount, MAX_VISIBLE_ROWS);
-        int height = HEADER_HEIGHT + (visibleRows * ROW_HEIGHT) + BUFFER;
-        grid.setHeight(height + "px");
+        if (rowCount <= MAX_VISIBLE_ROWS) {
+            grid.setAllRowsVisible(true);
+            grid.setHeight(null);
+        } else {
+            grid.setAllRowsVisible(false);
+            int height = HEADER_HEIGHT + (MAX_VISIBLE_ROWS * ROW_HEIGHT) + BUFFER;
+            grid.setHeight(height + "px");
+        }
     }
 
     private void edit(Person person) {
