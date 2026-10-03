@@ -1,4 +1,4 @@
-package ws.tilda.sentryprotocol.Luvd1s.data;
+package ws.tilda.sentryprotocol.Luvd1s.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
