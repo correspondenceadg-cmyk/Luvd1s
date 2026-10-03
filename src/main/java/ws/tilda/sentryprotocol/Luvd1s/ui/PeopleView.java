@@ -18,6 +18,8 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
@@ -32,6 +34,11 @@ import java.util.List;
 @Route("")
 @PageTitle("People")
 public class PeopleView extends VerticalLayout {
+
+    private static final int MAX_VISIBLE_ROWS = 20;
+    private static final int ROW_HEIGHT = 37;
+    private static final int HEADER_HEIGHT = 44;
+    private static final int BUFFER = 12;
 
     private final PersonService personService;
     private final InteractionService interactionService;
@@ -70,7 +77,16 @@ public class PeopleView extends VerticalLayout {
         setPadding(true);
         setSpacing(true);
 
-        add(new H2("People"));
+        H2 title = new H2("People");
+        Button dashboardButton = new Button("Dashboard", VaadinIcon.CHART.create(),
+                e -> UI.getCurrent().navigate(DashboardView.class));
+        dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        HorizontalLayout header = new HorizontalLayout(title, dashboardButton);
+        header.setWidthFull();
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.setAlignItems(Alignment.CENTER);
+        add(header);
 
         configureGrid();
         configureForm();
@@ -82,7 +98,6 @@ public class PeopleView extends VerticalLayout {
         filterTag.addValueChangeListener(e -> refresh());
 
         grid.setWidthFull();
-        grid.setHeight("400px");
 
         add(filterTag, grid, new H3("Edit person"), buildFormPanel());
 
@@ -187,9 +202,16 @@ public class PeopleView extends VerticalLayout {
                     .toList();
         }
         grid.setItems(all);
+        updateGridHeight(all.size());
         if (current != null && current.getId() != null) {
             grid.select(current);
         }
+    }
+
+    private void updateGridHeight(int rowCount) {
+        int visibleRows = Math.min(rowCount, MAX_VISIBLE_ROWS);
+        int height = HEADER_HEIGHT + (visibleRows * ROW_HEIGHT) + BUFFER;
+        grid.setHeight(height + "px");
     }
 
     private void edit(Person person) {
