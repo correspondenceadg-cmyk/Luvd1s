@@ -33,7 +33,7 @@ public class Person {
 
     private LocalDateTime lastContactedAt;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "person_tag",
         joinColumns = @JoinColumn(name = "person_id"),
@@ -41,7 +41,6 @@ public class Person {
     )
     private Set<Tag> tags = new HashSet<>();
 
-    // --- Getters and Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
