@@ -14,6 +14,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -77,24 +78,30 @@ public class PeopleView extends VerticalLayout {
         filterTag.setItems(tagService.findAll());
         filterTag.setItemLabelGenerator(Tag::getName);
         filterTag.setClearButtonVisible(true);
+        filterTag.setWidthFull();
         filterTag.addValueChangeListener(e -> refresh());
 
-        HorizontalLayout split = new HorizontalLayout(grid, buildFormPanel());
-        split.setSizeFull();
-        split.setFlexGrow(2, grid);
-        split.setFlexGrow(1, split.getComponentAt(1));
-        add(filterTag, split);
+        grid.setWidthFull();
+        grid.setHeight("400px");
+
+        add(filterTag, grid, new H3("Edit person"), buildFormPanel());
 
         refresh();
         edit(null);
     }
 
     private void configureGrid() {
+        grid.addComponentColumn(person -> {
+            Button open = new Button("Open", e ->
+                    UI.getCurrent().navigate(PersonDetailView.class, person.getId()));
+            open.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+            return open;
+        }).setHeader("").setAutoWidth(true).setFlexGrow(0);
+
         grid.addColumn(Person::getFirstName).setHeader("First name").setAutoWidth(true);
         grid.addColumn(Person::getLastName).setHeader("Last name").setAutoWidth(true);
         grid.addColumn(Person::getEmail).setHeader("Email").setAutoWidth(true);
-        grid.addColumn(Person::getCompany).setHeader("Company").setAutoWidth(true);
-        grid.addColumn(Person::getJobTitle).setHeader("Role").setAutoWidth(true);
+        grid.addColumn(Person::getPhone).setHeader("Phone").setAutoWidth(true);
 
         grid.addComponentColumn(this::tagChips).setHeader("Tags").setAutoWidth(true);
 
@@ -103,17 +110,9 @@ public class PeopleView extends VerticalLayout {
                     new InteractionDialog(interactionService, person, this::refresh).open());
             log.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
             return log;
-        }).setHeader("Log").setAutoWidth(true);
-
-        grid.addComponentColumn(person -> {
-            Button view = new Button(VaadinIcon.ARROW_RIGHT.create(), e ->
-                    UI.getCurrent().navigate(PersonDetailView.class, person.getId()));
-            view.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-            return view;
-        }).setHeader("").setAutoWidth(true);
+        }).setHeader("Log").setAutoWidth(true).setFlexGrow(0);
 
         grid.asSingleSelect().addValueChangeListener(e -> edit(e.getValue()));
-        grid.setSizeFull();
     }
 
     private HorizontalLayout tagChips(Person person) {
@@ -175,6 +174,7 @@ public class PeopleView extends VerticalLayout {
         VerticalLayout panel = new VerticalLayout(form, actions, logInteraction);
         panel.setPadding(false);
         panel.setSpacing(true);
+        panel.setWidthFull();
         return panel;
     }
 
