@@ -5,6 +5,7 @@ import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -103,6 +104,13 @@ public class PeopleView extends VerticalLayout {
             log.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
             return log;
         }).setHeader("Log").setAutoWidth(true);
+
+        grid.addComponentColumn(person -> {
+            Button view = new Button(VaadinIcon.ARROW_RIGHT.create(), e ->
+                    UI.getCurrent().navigate(PersonDetailView.class, person.getId()));
+            view.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+            return view;
+        }).setHeader("").setAutoWidth(true);
 
         grid.asSingleSelect().addValueChangeListener(e -> edit(e.getValue()));
         grid.setSizeFull();
