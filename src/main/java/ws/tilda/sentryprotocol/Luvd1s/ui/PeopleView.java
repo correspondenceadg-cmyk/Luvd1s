@@ -1,14 +1,19 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
+import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
+import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -20,12 +25,15 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import java.util.List;
+
 @Route("")
 @PageTitle("People")
 public class PeopleView extends VerticalLayout {
 
     private final PersonService personService;
     private final InteractionService interactionService;
+    private final TagService tagService;
 
     private final Grid<Person> grid = new Grid<>(Person.class, false);
     private final Binder<Person> binder = new Binder<>(Person.class);
@@ -38,6 +46,9 @@ public class PeopleView extends VerticalLayout {
     private final TextField jobTitle = new TextField("Job title");
     private final DatePicker birthday = new DatePicker("Birthday");
     private final TextArea notes = new TextArea("Notes");
+    private final MultiSelectComboBox<Tag> tagsField = new MultiSelectComboBox<>("Tags");
+
+    private final ComboBox<Tag> filterTag = new ComboBox<>("Filter by tag");
 
     private final Button save = new Button("Save");
     private final Button delete = new Button("Delete");
@@ -46,9 +57,12 @@ public class PeopleView extends VerticalLayout {
 
     private Person current;
 
-    public PeopleView(PersonService personService, InteractionService interactionService) {
+    public PeopleView(PersonService personService,
+                      InteractionService interactionService,
+                      TagService tagService) {
         this.personService = personService;
         this.interactionService = interactionService;
+        this.tagService = tagService;
 
         setSizeFull();
         setPadding(true);
@@ -59,11 +73,16 @@ public class PeopleView extends VerticalLayout {
         configureGrid();
         configureForm();
 
+        filterTag.setItems(tagService.findAll());
+        filterTag.setItemLabelGenerator(Tag::getName);
+        filterTag.setClearButtonVisible(true);
+        filterTag.addValueChangeListener(e -> refresh());
+
         HorizontalLayout split = new HorizontalLayout(grid, buildFormPanel());
         split.setSizeFull();
         split.setFlexGrow(2, grid);
         split.setFlexGrow(1, split.getComponentAt(1));
-        add(split);
+        add(filterTag, split);
 
         refresh();
         edit(null);
@@ -76,16 +95,34 @@ public class PeopleView extends VerticalLayout {
         grid.addColumn(Person::getCompany).setHeader("Company").setAutoWidth(true);
         grid.addColumn(Person::getJobTitle).setHeader("Role").setAutoWidth(true);
 
+        grid.addComponentColumn(this::tagChips).setHeader("Tags").setAutoWidth(true);
+
         grid.addComponentColumn(person -> {
-            Button log = new Button(VaadinIcon.BOLT.create(), e -> {
-                new InteractionDialog(interactionService, person, this::refresh).open();
-            });
+            Button log = new Button(VaadinIcon.BOLT.create(), e ->
+                    new InteractionDialog(interactionService, person, this::refresh).open());
             log.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
             return log;
         }).setHeader("Log").setAutoWidth(true);
 
         grid.asSingleSelect().addValueChangeListener(e -> edit(e.getValue()));
         grid.setSizeFull();
+    }
+
+    private HorizontalLayout tagChips(Person person) {
+        HorizontalLayout row = new HorizontalLayout();
+        row.setSpacing(false);
+        person.getTags().forEach(tag -> {
+            Span chip = new Span(tag.getName());
+            chip.getStyle()
+                    .set("background-color", tag.getColor() != null ? tag.getColor() : "#888")
+                    .set("color", "white")
+                    .set("padding", "2px 8px")
+                    .set("border-radius", "12px")
+                    .set("font-size", "0.75em")
+                    .set("margin-right", "4px");
+            row.add(chip);
+        });
+        return row;
     }
 
     private void configureForm() {
@@ -101,6 +138,10 @@ public class PeopleView extends VerticalLayout {
         binder.forField(jobTitle).bind(Person::getJobTitle, Person::setJobTitle);
         binder.forField(birthday).bind(Person::getBirthday, Person::setBirthday);
         binder.forField(notes).bind(Person::getNotes, Person::setNotes);
+
+        tagsField.setItems(tagService.findAll());
+        tagsField.setItemLabelGenerator(Tag::getName);
+        binder.forField(tagsField).bind(Person::getTags, Person::setTags);
 
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         save.addClickListener(e -> savePerson());
@@ -118,7 +159,7 @@ public class PeopleView extends VerticalLayout {
     private VerticalLayout buildFormPanel() {
         FormLayout form = new FormLayout(
                 firstName, lastName, email, phone,
-                company, jobTitle, birthday, notes
+                company, jobTitle, birthday, tagsField, notes
         );
         form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
 
@@ -130,7 +171,14 @@ public class PeopleView extends VerticalLayout {
     }
 
     private void refresh() {
-        grid.setItems(personService.findAll());
+        List<Person> all = personService.findAll();
+        Tag selected = filterTag.getValue();
+        if (selected != null) {
+            all = all.stream()
+                    .filter(p -> p.getTags().contains(selected))
+                    .toList();
+        }
+        grid.setItems(all);
         if (current != null && current.getId() != null) {
             grid.select(current);
         }
