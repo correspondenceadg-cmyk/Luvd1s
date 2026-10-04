@@ -20,15 +20,18 @@ public class InteractionService {
     private final PersonRepository people;
     private final UserService userService;
     private final AuditLogService auditLogService;
+    private final ObservabilityService observability;
 
     public InteractionService(InteractionRepository interactions,
                               PersonRepository people,
                               UserService userService,
-                              AuditLogService auditLogService) {
+                              AuditLogService auditLogService,
+                              ObservabilityService observability) {
         this.interactions = interactions;
         this.people = people;
         this.userService = userService;
         this.auditLogService = auditLogService;
+        this.observability = observability;
     }
 
     @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
@@ -57,6 +60,12 @@ public class InteractionService {
         Interaction saved = interactions.save(interaction);
         refreshLastContacted(interaction.getPerson());
 
+        if (isNew) {
+            observability.recordInteractionCreated();
+        } else {
+            observability.recordInteractionUpdated();
+        }
+
         auditLogService.record(
                 isNew ? "INTERACTION_CREATE" : "INTERACTION_UPDATE",
                 "Interaction",
@@ -81,6 +90,7 @@ public class InteractionService {
 
         interactions.delete(interaction);
         refreshLastContacted(person);
+        observability.recordInteractionDeleted();
 
         auditLogService.record(
                 "INTERACTION_DELETE",
@@ -109,6 +119,7 @@ public class InteractionService {
 
         interactions.delete(interaction);
         refreshLastContacted(person);
+        observability.recordInteractionDeleted();
 
         auditLogService.record(
                 "INTERACTION_DELETE",
