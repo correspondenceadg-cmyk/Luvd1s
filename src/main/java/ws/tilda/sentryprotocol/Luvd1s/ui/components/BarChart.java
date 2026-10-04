@@ -16,9 +16,10 @@ public class BarChart extends Div {
     private static final int PAD_T = 25;
     private static final int PAD_B = 55;
     private static final int GAP_PCT = 20;
+    private static final double MAX_BAR_WIDTH = 90.0;
 
     public BarChart(Map<String, Long> data, String color) {
-        setWidthFull();
+        getStyle().set("width", "100%");
         getStyle().set("max-width", WIDTH + "px");
 
         if (data.isEmpty()) {
@@ -29,16 +30,11 @@ public class BarChart extends Div {
             return;
         }
 
-        getStyle().set("position", "relative");
-        getStyle().set("height", "0");
-        getStyle().set("padding-bottom",
-                ((double) HEIGHT / WIDTH * 100.0) + "%");
-
         Element svg = new Element("svg");
         svg.setAttribute("viewBox", "0 0 " + WIDTH + " " + HEIGHT);
         svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
         svg.setAttribute("style",
-                "position:absolute;top:0;left:0;width:100%;height:100%;");
+                "display:block;width:100%;height:auto;max-width:" + WIDTH + "px;");
 
         int chartW = WIDTH - PAD_L - PAD_R;
         int chartH = HEIGHT - PAD_T - PAD_B;
@@ -47,6 +43,8 @@ public class BarChart extends Div {
         long maxY = Math.max(1, data.values().stream().max(Long::compare).orElse(1L));
 
         int gridCount = 4;
+
+        // Horizontal gridlines
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             Element line = new Element("line");
@@ -59,9 +57,13 @@ public class BarChart extends Div {
             svg.appendChild(line);
         }
 
+        // Y-axis labels — double math so labels are distinct
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
-            long value = (i == gridCount) ? 0 : maxY - (maxY * i) / gridCount;
+            double raw = maxY - ((double) maxY * i) / gridCount;
+            long value = Math.round(raw);
+            if (value < 0) value = 0;
+
             Element text = new Element("text");
             text.setAttribute("x", String.valueOf(PAD_L - 8));
             text.setAttribute("y", String.valueOf(y + 4));
@@ -72,6 +74,7 @@ public class BarChart extends Div {
             svg.appendChild(text);
         }
 
+        // Axes
         Element axisX = new Element("line");
         axisX.setAttribute("x1", String.valueOf(PAD_L));
         axisX.setAttribute("y1", String.valueOf(baseY));
@@ -93,21 +96,20 @@ public class BarChart extends Div {
         List<Map.Entry<String, Long>> entries = new ArrayList<>(data.entrySet());
         int n = entries.size();
         double slotW = (double) chartW / n;
-        double gapW = slotW * GAP_PCT / 100.0;
-        double barW = slotW - gapW;
+        double barW = Math.min(slotW * (1 - GAP_PCT / 100.0), MAX_BAR_WIDTH);
 
         for (int i = 0; i < n; i++) {
             Map.Entry<String, Long> entry = entries.get(i);
             long v = entry.getValue();
             int barH = (int) ((v * chartH) / maxY);
-            double x = PAD_L + i * slotW + gapW / 2.0;
+            double x = PAD_L + i * slotW + (slotW - barW) / 2.0;
             int y = baseY - barH;
 
             Element bar = new Element("rect");
             bar.setAttribute("x", String.valueOf(x));
             bar.setAttribute("y", String.valueOf(y));
             bar.setAttribute("width", String.valueOf(barW));
-            bar.setAttribute("height", String.valueOf(barH));
+            bar.setAttribute("height", String.valueOf(Math.max(barH, 1)));
             bar.setAttribute("rx", "3");
             bar.setAttribute("fill", color);
             Element title = new Element("title");
