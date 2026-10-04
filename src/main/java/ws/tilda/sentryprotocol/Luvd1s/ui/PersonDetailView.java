@@ -13,6 +13,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -63,8 +64,9 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
 
         setPadding(false);
         setSpacing(true);
-        getStyle().set("padding", "12px");
+        getStyle().set("padding", "16px");
         getStyle().set("box-sizing", "border-box");
+        getStyle().set("overflow-x", "hidden");
         setWidthFull();
     }
 
@@ -248,9 +250,42 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
 
         card.add(cardHeader);
 
+        if (interaction.getAiSummary() != null && !interaction.getAiSummary().isBlank()) {
+            Div aiBlock = new Div();
+            aiBlock.getStyle()
+                    .set("margin-top", "10px")
+                    .set("padding", "10px 12px")
+                    .set("background-color", "var(--lumo-primary-color-10pct)")
+                    .set("border-left", "3px solid var(--lumo-primary-color)")
+                    .set("border-radius", "4px");
+
+            Span aiLabel = new Span("AI SUMMARY");
+            aiLabel.getStyle()
+                    .set("display", "block")
+                    .set("font-size", "0.65em")
+                    .set("font-weight", "700")
+                    .set("letter-spacing", "1px")
+                    .set("color", "var(--lumo-primary-text-color)")
+                    .set("margin-bottom", "4px");
+
+            Span aiText = new Span(interaction.getAiSummary());
+            aiText.getStyle()
+                    .set("display", "block")
+                    .set("font-size", "0.95em")
+                    .set("line-height", "1.4");
+
+            aiBlock.add(aiLabel, aiText);
+            card.add(aiBlock);
+        }
+
         if (interaction.getSummary() != null && !interaction.getSummary().isBlank()) {
             Span summary = new Span(interaction.getSummary());
-            summary.getStyle().set("margin-top", "6px");
+            summary.getStyle()
+                    .set("margin-top", "8px")
+                    .set("display", "block")
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-size", "0.9em")
+                    .set("white-space", "pre-wrap");
             card.add(summary);
         }
 
@@ -260,7 +295,8 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
                 .set("margin-bottom", "10px")
                 .set("background-color", "var(--lumo-contrast-5pct)")
                 .set("border-radius", "4px")
-                .set("width", "100%");
+                .set("width", "100%")
+                .set("box-sizing", "border-box");
 
         return card;
     }
