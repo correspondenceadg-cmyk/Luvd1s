@@ -33,6 +33,7 @@ import com.vaadin.flow.router.Route;
 
 import java.util.List;
 
+@PermitAll
 @Route("")
 @PageTitle("People")
 public class PeopleView extends VerticalLayout {
