@@ -1,10 +1,13 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
+import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
+import ws.tilda.sentryprotocol.Luvd1s.service.AnalyticsService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.LineChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.UI;
@@ -45,10 +48,12 @@ import java.util.stream.Collectors;
 public class DashboardView extends VerticalLayout {
 
     private static final int STALE_DAYS = 30;
+    private static final int CHART_WEEKS = 12;
 
     private final PersonService personService;
     private final InteractionService interactionService;
     private final TagService tagService;
+    private final AnalyticsService analyticsService;
     private final AuthenticationContext authContext;
 
     private final VerticalLayout content = new VerticalLayout();
@@ -56,14 +61,19 @@ public class DashboardView extends VerticalLayout {
     public DashboardView(PersonService personService,
                          InteractionService interactionService,
                          TagService tagService,
+                         AnalyticsService analyticsService,
                          AuthenticationContext authContext) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.tagService = tagService;
+        this.analyticsService = analyticsService;
         this.authContext = authContext;
 
-        setPadding(true);
+        setPadding(false);
         setSpacing(true);
+        getStyle().set("padding", "12px");
+        getStyle().set("box-sizing", "border-box");
+        setWidthFull();
 
         add(buildHeader());
 
@@ -84,18 +94,13 @@ public class DashboardView extends VerticalLayout {
             SecurityContextHolder.getContext().setAuthentication(auth);
             try {
                 List<Person> people = personService.findAll();
-
-                Map<Long, Integer> interactionCounts = new LinkedHashMap<>();
-                for (Person p : people) {
-                    interactionCounts.put(p.getId(), interactionService.findByPerson(p).size());
-                }
-
+                List<Interaction> allInteractions = interactionService.findAllForCurrentUser();
                 List<Tag> tags = tagService.findAll();
 
                 ui.access(() -> {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                     try {
-                        renderDashboard(people, interactionCounts, tags);
+                        renderDashboard(people, allInteractions, tags);
                     } finally {
                         SecurityContextHolder.clearContext();
                     }
@@ -113,38 +118,51 @@ public class DashboardView extends VerticalLayout {
         skeleton.setWidthFull();
 
         skeleton.add(SkeletonViews.statCards(4));
+        skeleton.add(new H3("Frequency of contact"));
+        skeleton.add(SkeletonViews.barChart(4));
+        skeleton.add(new H3("Interaction types"));
+        skeleton.add(SkeletonViews.barChart(4));
         skeleton.add(new H3("Contacts by company"));
         skeleton.add(SkeletonViews.barChart(3));
         skeleton.add(new H3("Contacts by tag"));
         skeleton.add(SkeletonViews.barChart(4));
-        skeleton.add(new H3("Birthdays this month"));
-        skeleton.add(SkeletonViews.cardList(2));
-        skeleton.add(new H3("Reach out soon"));
-        skeleton.add(SkeletonViews.cardList(3));
 
         return skeleton;
     }
 
     private void renderDashboard(List<Person> people,
-                                 Map<Long, Integer> interactionCounts,
+                                 List<Interaction> interactions,
                                  List<Tag> tags) {
         LocalDate today = LocalDate.now();
 
         content.removeAll();
-        content.add(buildStatCards(people, today, interactionCounts));
+        content.add(buildStatCards(people, interactions, today));
 
         if (people.isEmpty()) {
             content.add(emptySection(
                     "No contacts yet",
                     "Add your first contact on the People page to see breakdowns here."
             ));
-        } else {
-            content.add(new H3("Contacts by company"));
-            content.add(buildBarChart(groupByCompany(people)));
-
-            content.add(new H3("Contacts by tag"));
-            content.add(buildBarChart(groupByTag(people, tags)));
+            return;
         }
+
+        content.add(new H3("Frequency of contact"));
+        content.add(new LineChart(
+                analyticsService.interactionsByWeek(interactions, CHART_WEEKS),
+                "#4CAF50"
+        ));
+
+        content.add(new H3("Interaction types"));
+        content.add(buildHorizontalBarChart(
+                analyticsService.countByType(interactions),
+                "#2196F3"
+        ));
+
+        content.add(new H3("Contacts by company"));
+        content.add(buildHorizontalBarChart(groupByCompany(people), "#2196F3"));
+
+        content.add(new H3("Contacts by tag"));
+        content.add(buildHorizontalBarChart(groupByTag(people, tags), "#9C27B0"));
 
         content.add(new H3("Birthdays this month"));
         content.add(buildBirthdayList(people, today.getMonth()));
@@ -155,6 +173,7 @@ public class DashboardView extends VerticalLayout {
 
     private HorizontalLayout buildHeader() {
         H2 title = new H2("Dashboard");
+        title.getStyle().set("margin", "0");
 
         Button peopleButton = new Button("People", VaadinIcon.USERS.create(),
                 e -> UI.getCurrent().navigate(PeopleView.class));
@@ -170,27 +189,31 @@ public class DashboardView extends VerticalLayout {
         HorizontalLayout buttons = new HorizontalLayout(peopleButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
         buttons.setAlignItems(Alignment.CENTER);
+        buttons.getStyle().set("flex-wrap", "wrap");
+        buttons.getStyle().set("gap", "4px");
 
         HorizontalLayout header = new HorizontalLayout(title, buttons);
         header.setWidthFull();
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
         header.setAlignItems(Alignment.CENTER);
+        header.getStyle().set("flex-wrap", "wrap");
+        header.getStyle().set("gap", "8px");
         return header;
     }
 
     private HorizontalLayout buildStatCards(List<Person> people,
-                                            LocalDate today,
-                                            Map<Long, Integer> interactionCounts) {
+                                            List<Interaction> interactions,
+                                            LocalDate today) {
         long total = people.size();
         long birthdays = people.stream()
                 .filter(p -> p.getBirthday() != null && p.getBirthday().getMonth() == today.getMonth())
                 .count();
         long stale = people.stream().filter(p -> isStale(p, today)).count();
-        long interactions = interactionCounts.values().stream().mapToLong(Integer::longValue).sum();
+        long interactionCount = interactions.size();
 
         HorizontalLayout row = new HorizontalLayout(
                 statCard("Contacts", total, "#2196F3"),
-                statCard("Interactions", interactions, "#4CAF50"),
+                statCard("Interactions", interactionCount, "#4CAF50"),
                 statCard("Birthdays", birthdays, "#E91E63"),
                 statCard("Stale", stale, "#FF9800")
         );
@@ -260,7 +283,7 @@ public class DashboardView extends VerticalLayout {
                 ));
     }
 
-    private VerticalLayout buildBarChart(Map<String, Long> data) {
+    private VerticalLayout buildHorizontalBarChart(Map<String, Long> data, String color) {
         VerticalLayout container = new VerticalLayout();
         container.setPadding(false);
         container.setSpacing(true);
@@ -273,7 +296,7 @@ public class DashboardView extends VerticalLayout {
 
         long max = data.values().stream().max(Long::compare).orElse(1L);
         for (Map.Entry<String, Long> entry : data.entrySet()) {
-            container.add(barRow(entry.getKey(), entry.getValue(), max, "#2196F3"));
+            container.add(barRow(entry.getKey(), entry.getValue(), max, color));
         }
         return container;
     }
