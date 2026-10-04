@@ -10,4 +10,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["java", \
+  "-XX:MaxRAMPercentage=60", \
+  "-XX:+UseSerialGC", \
+  "-Xss512k", \
+  "-Djava.security.egd=file:/dev/./urandom", \
+  "-jar", "app.jar"]
