@@ -2,9 +2,11 @@ package ws.tilda.sentryprotocol.Luvd1s.ui;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
+import ws.tilda.sentryprotocol.Luvd1s.service.AiChatService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.AiChatPanel;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.HasValue;
@@ -57,6 +59,7 @@ public class PeopleView extends VerticalLayout {
     private final InteractionService interactionService;
     private final TagService tagService;
     private final AuthenticationContext authContext;
+    private final AiChatService aiChatService;
 
     private final Grid<Person> grid = new Grid<>(Person.class, false);
     private final Binder<Person> binder = new Binder<>(Person.class);
@@ -87,15 +90,17 @@ public class PeopleView extends VerticalLayout {
     public PeopleView(PersonService personService,
                       InteractionService interactionService,
                       TagService tagService,
-                      AuthenticationContext authContext) {
+                      AuthenticationContext authContext,
+                      AiChatService aiChatService) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.tagService = tagService;
         this.authContext = authContext;
+        this.aiChatService = aiChatService;
 
         setPadding(false);
         setSpacing(true);
-        getStyle().set("padding", "12px");
+        getStyle().set("padding", "16px");
         getStyle().set("box-sizing", "border-box");
         setWidthFull();
 
@@ -117,6 +122,8 @@ public class PeopleView extends VerticalLayout {
 
         add(filterTag, gridContainer, new H3("Edit person"), buildFormPanel());
 
+        add(new AiChatPanel(aiChatService));
+
         edit(null);
         loadAsync();
     }
@@ -136,9 +143,7 @@ public class PeopleView extends VerticalLayout {
                     try {
                         cachedPeople.clear();
                         cachedPeople.addAll(people);
-
                         filterTag.setItems(tags);
-
                         gridContainer.removeAll();
                         gridContainer.add(grid);
                         applyFilter();
@@ -161,12 +166,10 @@ public class PeopleView extends VerticalLayout {
         dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         dashboardButton.setAriaLabel("Go to dashboard");
 
-
-Button debugButton = new Button("Debug", VaadinIcon.COG.create(),
-        e -> UI.getCurrent().navigate(DebugView.class));
-debugButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-debugButton.setAriaLabel("Open debug dashboard");
-
+        Button debugButton = new Button("Debug", VaadinIcon.COG.create(),
+                e -> UI.getCurrent().navigate(DebugView.class));
+        debugButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        debugButton.setAriaLabel("Open debug dashboard");
 
         ThemeToggle themeToggle = new ThemeToggle();
 
