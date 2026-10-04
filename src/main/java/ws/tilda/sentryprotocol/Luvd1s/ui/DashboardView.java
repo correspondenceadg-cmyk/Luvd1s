@@ -7,6 +7,7 @@ import ws.tilda.sentryprotocol.Luvd1s.service.AnalyticsService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.BarChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.LineChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
@@ -116,7 +117,6 @@ public class DashboardView extends VerticalLayout {
         skeleton.setPadding(false);
         skeleton.setSpacing(true);
         skeleton.setWidthFull();
-
         skeleton.add(SkeletonViews.statCards(4));
         skeleton.add(new H3("Frequency of contact"));
         skeleton.add(SkeletonViews.barChart(4));
@@ -126,7 +126,6 @@ public class DashboardView extends VerticalLayout {
         skeleton.add(SkeletonViews.barChart(3));
         skeleton.add(new H3("Contacts by tag"));
         skeleton.add(SkeletonViews.barChart(4));
-
         return skeleton;
     }
 
@@ -153,16 +152,16 @@ public class DashboardView extends VerticalLayout {
         ));
 
         content.add(new H3("Interaction types"));
-        content.add(buildHorizontalBarChart(
+        content.add(new BarChart(
                 analyticsService.countByType(interactions),
                 "#2196F3"
         ));
 
         content.add(new H3("Contacts by company"));
-        content.add(buildHorizontalBarChart(groupByCompany(people), "#2196F3"));
+        content.add(new BarChart(groupByCompany(people), "#9C27B0"));
 
         content.add(new H3("Contacts by tag"));
-        content.add(buildHorizontalBarChart(groupByTag(people, tags), "#9C27B0"));
+        content.add(new BarChart(groupByTag(people, tags), "#FF9800"));
 
         content.add(new H3("Birthdays this month"));
         content.add(buildBirthdayList(people, today.getMonth()));
@@ -281,64 +280,6 @@ public class DashboardView extends VerticalLayout {
                         (a, b) -> a,
                         LinkedHashMap::new
                 ));
-    }
-
-    private VerticalLayout buildHorizontalBarChart(Map<String, Long> data, String color) {
-        VerticalLayout container = new VerticalLayout();
-        container.setPadding(false);
-        container.setSpacing(true);
-        container.setWidthFull();
-
-        if (data.isEmpty()) {
-            container.add(emptyInline("No data to show yet."));
-            return container;
-        }
-
-        long max = data.values().stream().max(Long::compare).orElse(1L);
-        for (Map.Entry<String, Long> entry : data.entrySet()) {
-            container.add(barRow(entry.getKey(), entry.getValue(), max, color));
-        }
-        return container;
-    }
-
-    private HorizontalLayout barRow(String label, long value, long max, String color) {
-        Span labelSpan = new Span(label);
-        labelSpan.getStyle()
-                .set("width", "100px")
-                .set("font-size", "0.9em")
-                .set("flex-shrink", "0");
-
-        Div track = new Div();
-        track.getStyle()
-                .set("background-color", "var(--lumo-contrast-10pct)")
-                .set("height", "20px")
-                .set("border-radius", "10px")
-                .set("flex", "1")
-                .set("overflow", "hidden");
-        track.getElement().setAttribute("aria-label", label + ": " + value);
-
-        Div fill = new Div();
-        double percent = max == 0 ? 0 : (value * 100.0) / max;
-        fill.getStyle()
-                .set("background-color", color)
-                .set("height", "100%")
-                .set("width", percent + "%")
-                .set("border-radius", "10px");
-        track.add(fill);
-
-        Span valueSpan = new Span(String.valueOf(value));
-        valueSpan.getStyle()
-                .set("width", "30px")
-                .set("text-align", "right")
-                .set("font-weight", "600")
-                .set("color", "var(--lumo-body-text-color)")
-                .set("flex-shrink", "0");
-
-        HorizontalLayout row = new HorizontalLayout(labelSpan, track, valueSpan);
-        row.setWidthFull();
-        row.setAlignItems(Alignment.CENTER);
-        row.setSpacing(true);
-        return row;
     }
 
     private VerticalLayout buildBirthdayList(List<Person> people, Month month) {
