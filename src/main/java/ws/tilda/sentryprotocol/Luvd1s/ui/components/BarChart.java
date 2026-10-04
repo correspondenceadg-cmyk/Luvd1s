@@ -9,28 +9,31 @@ import java.util.Map;
 
 public class BarChart extends Div {
 
-    private static final int WIDTH = 700;
+    private static final int WIDTH = 350;
     private static final int HEIGHT = 280;
-    private static final int PAD_L = 50;
-    private static final int PAD_R = 20;
-    private static final int PAD_T = 25;
-    private static final int PAD_B = 55;
+    private static final int PAD_L = 42;
+    private static final int PAD_R = 12;
+    private static final int PAD_T = 18;
+    private static final int PAD_B = 42;
     private static final int GAP_PCT = 20;
-    private static final double MAX_BAR_WIDTH = 90.0;
+    private static final double MAX_BAR_WIDTH = 55.0;
 
     public BarChart(Map<String, Long> data, String color) {
         setWidthFull();
-        getStyle().set("max-width", WIDTH + "px");
-        getStyle().set("aspect-ratio", WIDTH + " / " + HEIGHT);
+        getStyle().set("max-width", "400px");
+        getStyle().set("height", HEIGHT + "px");
+        getStyle().set("min-height", HEIGHT + "px");
         getStyle().set("position", "relative");
-        getStyle().set("overflow", "visible");
+        getStyle().set("flex-shrink", "0");
+        getStyle().set("overflow", "hidden");
 
         if (data.isEmpty()) {
             setText("No data to show yet.");
             getStyle().set("color", "var(--lumo-secondary-text-color)");
             getStyle().set("font-style", "italic");
             getStyle().set("padding", "16px 0");
-            getStyle().set("aspect-ratio", "unset");
+            getStyle().set("height", "auto");
+            getStyle().set("min-height", "auto");
             return;
         }
 
@@ -69,10 +72,10 @@ public class BarChart extends Div {
                     : String.format("%.1f", raw);
 
             Element text = new Element("text");
-            text.setAttribute("x", String.valueOf(PAD_L - 8));
+            text.setAttribute("x", String.valueOf(PAD_L - 6));
             text.setAttribute("y", String.valueOf(y + 4));
             text.setAttribute("text-anchor", "end");
-            text.setAttribute("font-size", "12");
+            text.setAttribute("font-size", "11");
             text.setAttribute("fill", "var(--lumo-secondary-text-color)");
             text.setText(label);
             svg.appendChild(text);
@@ -122,9 +125,9 @@ public class BarChart extends Div {
 
             Element valueText = new Element("text");
             valueText.setAttribute("x", String.valueOf(x + barW / 2.0));
-            valueText.setAttribute("y", String.valueOf(y - 6));
+            valueText.setAttribute("y", String.valueOf(y - 5));
             valueText.setAttribute("text-anchor", "middle");
-            valueText.setAttribute("font-size", "12");
+            valueText.setAttribute("font-size", "11");
             valueText.setAttribute("font-weight", "600");
             valueText.setAttribute("fill", "var(--lumo-body-text-color)");
             valueText.setText(String.valueOf(v));
@@ -132,9 +135,9 @@ public class BarChart extends Div {
 
             Element labelText = new Element("text");
             labelText.setAttribute("x", String.valueOf(x + barW / 2.0));
-            labelText.setAttribute("y", String.valueOf(baseY + 20));
+            labelText.setAttribute("y", String.valueOf(baseY + 16));
             labelText.setAttribute("text-anchor", "middle");
-            labelText.setAttribute("font-size", "12");
+            labelText.setAttribute("font-size", "11");
             labelText.setAttribute("fill", "var(--lumo-secondary-text-color)");
             labelText.setText(entry.getKey());
             svg.appendChild(labelText);
