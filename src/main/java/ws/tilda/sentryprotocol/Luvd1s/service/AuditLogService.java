@@ -22,9 +22,12 @@ public class AuditLogService {
     private static final Logger log = LoggerFactory.getLogger(AuditLogService.class);
 
     private final AuditLogRepository repository;
+    private final ObservabilityService observability;
 
-    public AuditLogService(AuditLogRepository repository) {
+    public AuditLogService(AuditLogRepository repository,
+                           ObservabilityService observability) {
         this.repository = repository;
+        this.observability = observability;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -40,6 +43,7 @@ public class AuditLogService {
             entry.setIpAddress(currentIp());
             entry.setUserAgent(truncate(currentUserAgent(), 200));
             repository.save(entry);
+            observability.recordAuditWritten();
         } catch (Exception ex) {
             log.warn("Failed to write audit log for {}: {}", action, ex.getMessage());
         }
