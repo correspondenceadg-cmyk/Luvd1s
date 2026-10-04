@@ -5,6 +5,7 @@ import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.User;
 import ws.tilda.sentryprotocol.Luvd1s.repository.InteractionRepository;
 import ws.tilda.sentryprotocol.Luvd1s.repository.PersonRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,25 +19,25 @@ public class InteractionService {
     private final InteractionRepository interactions;
     private final PersonRepository people;
     private final UserService userService;
+    private final AuditLogService auditLogService;
 
     public InteractionService(InteractionRepository interactions,
                               PersonRepository people,
-                              UserService userService) {
+                              UserService userService,
+                              AuditLogService auditLogService) {
         this.interactions = interactions;
         this.people = people;
         this.userService = userService;
+        this.auditLogService = auditLogService;
     }
 
+    @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
     public List<Interaction> findByPerson(Person person) {
         if (person == null || person.getId() == null) return List.of();
-        User owner = userService.getCurrentUser();
-        if (owner == null) return List.of();
-        if (person.getOwner() == null || !person.getOwner().getId().equals(owner.getId())) {
-            return List.of();
-        }
         return interactions.findByPersonIdOrderByOccurredAtDesc(person.getId());
     }
 
+    @PreAuthorize("isAuthenticated()")
     public List<Interaction> findAllForCurrentUser() {
         User owner = userService.getCurrentUser();
         if (owner == null) return List.of();
@@ -49,38 +50,48 @@ public class InteractionService {
     }
 
     @Transactional
+    @PreAuthorize("isAuthenticated() and @ownership.owns(#interaction)")
     public Interaction save(Interaction interaction) {
-        User owner = userService.getCurrentUser();
-        if (owner == null) throw new IllegalStateException("Not logged in");
-
-        Person person = interaction.getPerson();
-        if (person == null || person.getOwner() == null
-                || !person.getOwner().getId().equals(owner.getId())) {
-            throw new SecurityException("Not authorized");
-        }
+        boolean isNew = interaction.getId() == null;
 
         Interaction saved = interactions.save(interaction);
-        refreshLastContacted(person);
+        refreshLastContacted(interaction.getPerson());
+
+        auditLogService.record(
+                isNew ? "INTERACTION_CREATE" : "INTERACTION_UPDATE",
+                "Interaction",
+                saved.getId(),
+                (isNew ? "Logged " : "Updated ")
+                        + saved.getType() + " with "
+                        + saved.getPerson().getFirstName() + " " + saved.getPerson().getLastName()
+        );
+
         return saved;
     }
 
     @Transactional
+    @PreAuthorize("isAuthenticated() and @ownership.owns(#interaction)")
     public void delete(Interaction interaction) {
-        if (interaction == null) return;
-        User owner = userService.getCurrentUser();
-        if (owner == null) return;
+        if (interaction == null || interaction.getId() == null) return;
 
+        Long id = interaction.getId();
+        String target = interaction.getPerson().getFirstName()
+                + " " + interaction.getPerson().getLastName();
         Person person = interaction.getPerson();
-        if (person == null || person.getOwner() == null
-                || !person.getOwner().getId().equals(owner.getId())) {
-            return;
-        }
 
         interactions.delete(interaction);
         refreshLastContacted(person);
+
+        auditLogService.record(
+                "INTERACTION_DELETE",
+                "Interaction",
+                id,
+                "Deleted interaction with " + target
+        );
     }
 
     @Transactional
+    @PreAuthorize("isAuthenticated()")
     public boolean deleteById(Long id) {
         User owner = userService.getCurrentUser();
         if (owner == null) return false;
@@ -94,12 +105,23 @@ public class InteractionService {
             return false;
         }
 
+        String target = person.getFirstName() + " " + person.getLastName();
+
         interactions.delete(interaction);
         refreshLastContacted(person);
+
+        auditLogService.record(
+                "INTERACTION_DELETE",
+                "Interaction",
+                id,
+                "Deleted interaction with " + target
+        );
+
         return true;
     }
 
     private void refreshLastContacted(Person person) {
+        if (person == null || person.getId() == null) return;
         LocalDateTime latest = interactions
                 .findByPersonIdOrderByOccurredAtDesc(person.getId())
                 .stream()
