@@ -24,18 +24,29 @@ public class Interaction {
     @Column(length = 2000)
     private String summary;
 
+    @Column(length = 500)
+    private String aiSummary;
+
     private LocalDate followUpDate;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
     public Person getPerson() { return person; }
     public void setPerson(Person person) { this.person = person; }
+
     public InteractionType getType() { return type; }
     public void setType(InteractionType type) { this.type = type; }
+
     public LocalDateTime getOccurredAt() { return occurredAt; }
     public void setOccurredAt(LocalDateTime occurredAt) { this.occurredAt = occurredAt; }
+
     public String getSummary() { return summary; }
     public void setSummary(String summary) { this.summary = summary; }
+
+    public String getAiSummary() { return aiSummary; }
+    public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
+
     public LocalDate getFollowUpDate() { return followUpDate; }
     public void setFollowUpDate(LocalDate followUpDate) { this.followUpDate = followUpDate; }
 }
