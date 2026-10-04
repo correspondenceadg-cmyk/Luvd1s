@@ -10,11 +10,12 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+
+import java.util.function.Supplier;
 
 public class AiChatPanel extends Div {
 
@@ -27,6 +28,7 @@ public class AiChatPanel extends Div {
     private final Scroller messagesScroller;
     private final TextField input;
     private final Div suggestions;
+    private final Span quotaLabel;
 
     public AiChatPanel(AiChatService chatService) {
         this.chatService = chatService;
@@ -38,6 +40,7 @@ public class AiChatPanel extends Div {
         messagesScroller = new Scroller(messages);
         input = new TextField();
         suggestions = new Div();
+        quotaLabel = new Span();
 
         buildDialog();
 
@@ -70,16 +73,16 @@ public class AiChatPanel extends Div {
         dialog.setHeight("560px");
         dialog.setMaxHeight("85vh");
         dialog.setCloseOnEsc(true);
-        dialog.setModal(false);
 
-        // Suggestions row
         suggestions.addClassName("ai-suggestions");
         suggestions.add(
                 suggestionChip("Who should I reach out to?", chatService::whoShouldIReachOutTo),
                 suggestionChip("Summarise my recent activity", chatService::summarizeRecentActivity)
         );
 
-        // Messages area
+        quotaLabel.addClassName("ai-quota");
+        updateQuotaLabel();
+
         messages.setPadding(false);
         messages.setSpacing(true);
         messages.setWidthFull();
@@ -89,7 +92,6 @@ public class AiChatPanel extends Div {
         messagesScroller.getStyle().set("flex", "1");
         messagesScroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
 
-        // Input row
         input.setPlaceholder("Ask anything…");
         input.setWidthFull();
         input.addClassName("ai-input");
@@ -106,8 +108,7 @@ public class AiChatPanel extends Div {
         inputRow.getStyle().set("flex-shrink", "0");
         inputRow.setFlexGrow(1, input);
 
-        // Root layout
-        VerticalLayout content = new VerticalLayout(suggestions, messagesScroller, inputRow);
+        VerticalLayout content = new VerticalLayout(suggestions, quotaLabel, messagesScroller, inputRow);
         content.setPadding(false);
         content.setSpacing(true);
         content.setWidthFull();
@@ -116,38 +117,58 @@ public class AiChatPanel extends Div {
 
         dialog.add(content);
 
-        // Footer
         Button close = new Button("Close", e -> dialog.close());
         close.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         dialog.getFooter().add(close);
 
-        // On first open, greet
         dialog.addOpenedChangeListener(e -> {
-            if (e.isOpened() && messages.getComponentCount() == 0) {
-                appendAssistant(
-                        "Hi. I'm off by default and only see what you share with me. " +
-                        "Names, emails, and phone numbers are stripped before anything is sent out. " +
-                        "Try a suggestion above or ask a question."
-                );
+            if (e.isOpened()) {
+                updateQuotaLabel();
+                if (messages.getComponentCount() == 0) {
+                    appendAssistant(
+                            "Hi. I'm off by default and only see what you share with me. " +
+                            "Names, emails, and phone numbers are stripped before anything is sent out. " +
+                            "Try a suggestion above or ask a question."
+                    );
+                }
             }
         });
     }
 
-    private Button suggestionChip(String label, java.util.function.Supplier<String> action) {
+    private void updateQuotaLabel() {
+        int remaining = chatService.remainingRequests();
+        int max = chatService.maxRequests();
+        quotaLabel.setText(remaining + " of " + max + " requests remaining this hour");
+
+        if (remaining == 0) {
+            quotaLabel.getStyle().set("color", "#F44336");
+            quotaLabel.getStyle().set("font-weight", "600");
+        } else if (remaining <= 3) {
+            quotaLabel.getStyle().set("color", "#FF9800");
+            quotaLabel.getStyle().set("font-weight", "500");
+        } else {
+            quotaLabel.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            quotaLabel.getStyle().set("font-weight", "400");
+        }
+    }
+
+    private Button suggestionChip(String label, Supplier<String> action) {
         Button chip = new Button(label);
         chip.addClassName("ai-chip");
         chip.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
         chip.addClickListener(e -> {
             appendUser(label);
             chip.setEnabled(false);
-            UI.getCurrent().setPollInterval(200);
-            chip.getElement().executeJs(
-                    "return new Promise(resolve => setTimeout(resolve, 40));"
-            ).then(v -> {
-                String reply = action.get();
-                appendAssistant(reply);
-                chip.setEnabled(true);
-            });
+            UI ui = UI.getCurrent();
+            ui.setPollInterval(200);
+            ui.getPage().executeJs("return new Promise(resolve => setTimeout(resolve, 40));")
+                    .then(v -> {
+                        String reply = action.get();
+                        appendAssistant(reply);
+                        updateQuotaLabel();
+                        chip.setEnabled(true);
+                        ui.setPollInterval(-1);
+                    });
         });
         return chip;
     }
@@ -173,6 +194,7 @@ public class AiChatPanel extends Div {
                 .then(v -> {
                     String reply = chatService.freeChat(text);
                     appendAssistant(reply);
+                    updateQuotaLabel();
                     ui.setPollInterval(-1);
                 });
     }
@@ -205,7 +227,6 @@ public class AiChatPanel extends Div {
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
 
-        // Hide the speech bubble if the user has already opened the chat this session.
         getElement().executeJs(
                 "return sessionStorage.getItem('luvd1s.ai.dismissed') === 'true';"
         ).then(Boolean.class, dismissed -> {
