@@ -4,6 +4,7 @@ import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -82,10 +83,12 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         log.addClickListener(e -> new InteractionDialog(
                 interactionService, person, this::render).open());
 
+        ThemeToggle themeToggle = new ThemeToggle();
+
         Button logout = new Button("Log out", e -> authContext.logout());
         logout.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout actions = new HorizontalLayout(back, log, logout);
+        HorizontalLayout actions = new HorizontalLayout(back, log, themeToggle, logout);
         actions.setWidthFull();
         actions.setJustifyContentMode(JustifyContentMode.BETWEEN);
         actions.setAlignItems(Alignment.CENTER);
@@ -102,12 +105,14 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         }
         if (metaLine.length() > 0) {
             Span meta = new Span(metaLine.toString());
-            meta.getStyle().set("color", "#666");
+            meta.getStyle().set("color", "var(--lumo-secondary-text-color)");
             header.add(meta);
         }
         if (person.getEmail() != null) {
             Span emailSpan = new Span(person.getEmail());
-            emailSpan.getStyle().set("color", "#666").set("font-size", "0.9em");
+            emailSpan.getStyle()
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-size", "0.9em");
             header.add(emailSpan);
         }
         header.setPadding(false);
@@ -123,7 +128,9 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
 
         if (interactions.isEmpty()) {
             Span empty = new Span("No interactions logged yet.");
-            empty.getStyle().set("color", "#888").set("font-style", "italic");
+            empty.getStyle()
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-style", "italic");
             timeline.add(empty);
             return;
         }
@@ -152,7 +159,9 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
 
         Span when = new Span(interaction.getOccurredAt()
                 .format(DateTimeFormatter.ofPattern("MMM d, yyyy · HH:mm")));
-        when.getStyle().set("color", "#666").set("font-size", "0.85em");
+        when.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "0.85em");
 
         Button edit = new Button(VaadinIcon.EDIT.create(), e ->
                 new InteractionDialog(interactionService, person, this::render, interaction).open());
@@ -187,7 +196,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
                 .set("border-left", "3px solid #2196F3")
                 .set("padding", "12px")
                 .set("margin-bottom", "10px")
-                .set("background-color", "#fafafa")
+                .set("background-color", "var(--lumo-contrast-5pct)")
                 .set("border-radius", "4px")
                 .set("width", "100%");
 
