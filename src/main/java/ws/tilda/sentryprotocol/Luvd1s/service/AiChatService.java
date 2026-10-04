@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class AiChatService {
@@ -22,15 +21,21 @@ public class AiChatService {
     private final PersonService personService;
     private final InteractionService interactionService;
     private final PiiScrubber scrubber;
+    private final UserService userService;
+    private final RateLimiter rateLimiter;
 
     public AiChatService(AiService aiService,
                          PersonService personService,
                          InteractionService interactionService,
-                         PiiScrubber scrubber) {
+                         PiiScrubber scrubber,
+                         UserService userService,
+                         RateLimiter rateLimiter) {
         this.aiService = aiService;
         this.personService = personService;
         this.interactionService = interactionService;
         this.scrubber = scrubber;
+        this.userService = userService;
+        this.rateLimiter = rateLimiter;
     }
 
     public boolean isEnabledForSession() {
@@ -47,15 +52,22 @@ public class AiChatService {
         }
     }
 
-    /**
-     * Free-text chat. The user's message is scrubbed before being sent.
-     * No CRM data is included automatically — the user has to reference
-     * what they're asking about.
-     */
+    public int remainingRequests() {
+        return rateLimiter.remaining(currentUserKey());
+    }
+
+    public int maxRequests() {
+        return rateLimiter.maxRequests();
+    }
+
     public String freeChat(String userMessage) {
         if (!aiService.isConfigured()) {
             return "AI is not configured on this server.";
         }
+        if (!checkRateLimit()) {
+            return rateLimitMessage();
+        }
+
         String clean = scrubber.scrub(userMessage);
         List<Map<String, String>> messages = List.of(
                 Map.of("role", "system", "content", systemPrompt()),
@@ -64,13 +76,12 @@ public class AiChatService {
         return aiService.chat(messages).orElse("I couldn't reach the AI service just now.");
     }
 
-    /**
-     * "Who should I reach out to?" — assembles stale contacts server-side,
-     * scrubs names, and asks the AI to prioritise by cadence and context.
-     */
     public String whoShouldIReachOutTo() {
         if (!aiService.isConfigured()) {
             return "AI is not configured on this server.";
+        }
+        if (!checkRateLimit()) {
+            return rateLimitMessage();
         }
 
         List<Person> people = personService.findAll();
@@ -90,7 +101,6 @@ public class AiChatService {
                     ? "never contacted"
                     : days + " days since last contact";
 
-            // Scrub each line so names never leave the server.
             lines.add(scrubber.scrub(
                     "Contact #" + p.getId() + " — " + relationship + ", " + cadence,
                     p));
@@ -109,13 +119,12 @@ public class AiChatService {
         return aiService.chat(messages).orElse("I couldn't reach the AI service just now.");
     }
 
-    /**
-     * Summarise the user's recent activity. All interaction summaries are
-     * scrubbed before being sent.
-     */
     public String summarizeRecentActivity() {
         if (!aiService.isConfigured()) {
             return "AI is not configured on this server.";
+        }
+        if (!checkRateLimit()) {
+            return rateLimitMessage();
         }
 
         List<Interaction> all = interactionService.findAllForCurrentUser();
@@ -123,7 +132,6 @@ public class AiChatService {
             return "You don't have any interactions logged yet.";
         }
 
-        // Take the 15 most recent.
         List<Interaction> recent = all.stream()
                 .sorted(Comparator.comparing(Interaction::getOccurredAt).reversed())
                 .limit(15)
@@ -148,6 +156,22 @@ public class AiChatService {
         );
 
         return aiService.chat(messages).orElse("I couldn't reach the AI service just now.");
+    }
+
+    private boolean checkRateLimit() {
+        return rateLimiter.tryAcquire(currentUserKey());
+    }
+
+    private String currentUserKey() {
+        var user = userService.getCurrentUser();
+        if (user == null) return null;
+        return user.getUsername();
+    }
+
+    private String rateLimitMessage() {
+        long minutes = rateLimiter.windowSeconds() / 60;
+        return "You've hit the AI rate limit (" + rateLimiter.maxRequests()
+                + " requests per " + minutes + " minutes). Try again later.";
     }
 
     private String describeRelationship(Person p) {
