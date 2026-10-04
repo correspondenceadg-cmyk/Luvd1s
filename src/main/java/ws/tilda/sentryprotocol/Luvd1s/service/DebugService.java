@@ -24,19 +24,22 @@ public class DebugService {
     private final UserRepository users;
     private final AuditLogRepository auditLogs;
     private final RecentRequestsBuffer requestBuffer;
+    private final ObservabilityService observability;
 
     public DebugService(PersonRepository people,
                         InteractionRepository interactions,
                         TagRepository tags,
                         UserRepository users,
                         AuditLogRepository auditLogs,
-                        RecentRequestsBuffer requestBuffer) {
+                        RecentRequestsBuffer requestBuffer,
+                        ObservabilityService observability) {
         this.people = people;
         this.interactions = interactions;
         this.tags = tags;
         this.users = users;
         this.auditLogs = auditLogs;
         this.requestBuffer = requestBuffer;
+        this.observability = observability;
     }
 
     public Map<String, String> jvmStats() {
@@ -85,6 +88,22 @@ public class DebugService {
 
     public List<AuditLog> recentAudits() {
         return auditLogs.findTop50ByOrderByCreatedAtDesc();
+    }
+
+    public Map<String, String> httpStats() {
+        return observability.httpStats();
+    }
+
+    public Map<String, String> businessCounters() {
+        return observability.businessCounters();
+    }
+
+    public Map<String, String> poolStats() {
+        return observability.poolStats();
+    }
+
+    public String scrapeUrl() {
+        return observability.scrapeUrl();
     }
 
     private String formatUptime(long seconds) {
