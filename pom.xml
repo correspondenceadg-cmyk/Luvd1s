@@ -49,6 +49,11 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.8.6</version>
+		</dependency>
+		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-dev</artifactId>
 			<scope>provided</scope>
@@ -90,27 +95,27 @@
 		</dependencies>
 	</dependencyManagement>
 
-<build>
-	<plugins>
-		<plugin>
-			<groupId>com.vaadin</groupId>
-			<artifactId>vaadin-maven-plugin</artifactId>
-			<version>${vaadin.version}</version>
-			<executions>
-				<execution>
-					<id>frontend</id>
-					<goals>
-						<goal>prepare-frontend</goal>
-						<goal>build-frontend</goal>
-					</goals>
-				</execution>
-			</executions>
-		</plugin>
-		<plugin>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-maven-plugin</artifactId>
-		</plugin>
-	</plugins>
-</build>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.vaadin</groupId>
+				<artifactId>vaadin-maven-plugin</artifactId>
+				<version>${vaadin.version}</version>
+				<executions>
+					<execution>
+						<id>frontend</id>
+						<goals>
+							<goal>prepare-frontend</goal>
+							<goal>build-frontend</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
