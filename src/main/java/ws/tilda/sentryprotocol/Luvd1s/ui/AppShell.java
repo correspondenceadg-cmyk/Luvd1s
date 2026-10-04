@@ -13,11 +13,10 @@ public class AppShell implements AppShellConfigurator {
     @Override
     public void configurePage(AppShellSettings settings) {
         settings.addInlineWithContents(
-                AppShellSettings.Position.HEAD,
                 "try{var t=localStorage.getItem('luvd1s-theme');" +
                 "if(t==='dark'){document.documentElement.setAttribute('theme','dark');}" +
                 "}catch(e){}",
-                AppShellSettings.WrappingMode.PRESERVE_WHITESPACE
+                "theme-init"
         );
     }
 }
