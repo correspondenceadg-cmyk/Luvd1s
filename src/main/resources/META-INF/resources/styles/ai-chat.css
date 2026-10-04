@@ -84,6 +84,15 @@
     flex-shrink: 0;
 }
 
+.ai-quota {
+    display: block;
+    font-size: 0.75em;
+    letter-spacing: 0.02em;
+    margin: -2px 0 4px 0;
+    flex-shrink: 0;
+    transition: color 200ms ease-out;
+}
+
 .ai-chip {
     font-size: 0.8em;
     text-transform: none;
