@@ -43,10 +43,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             Optional<User> user = apiKeyService.resolve(key);
 
             user.ifPresent(u -> {
+                boolean admin = "admin".equals(u.getUsername());
+                var authorities = admin
+                        ? List.of(new SimpleGrantedAuthority("ROLE_API"),
+                                  new SimpleGrantedAuthority("ROLE_USER"),
+                                  new SimpleGrantedAuthority("ROLE_ADMIN"))
+                        : List.of(new SimpleGrantedAuthority("ROLE_API"),
+                                  new SimpleGrantedAuthority("ROLE_USER"));
+
                 var auth = new UsernamePasswordAuthenticationToken(
                         u.getUsername(),
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_API"))
+                        authorities
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
             });
