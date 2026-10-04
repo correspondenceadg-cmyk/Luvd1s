@@ -313,6 +313,13 @@ GitHub Actions runs on every push:
 
 ---
 
+---
+
+[![Architecture diagram of correspondenceadg-cmyk/luvd1s](https://gitdiagram.com/correspondenceadg-cmyk/luvd1s/diagram.png)](https://gitdiagram.com/correspondenceadg-cmyk/luvd1s?utm_source=readme&utm_medium=picture)
+
+---
+
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
