@@ -99,6 +99,11 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
                 interactionService, person, this::render).open());
         log.setAriaLabel("Log interaction with " + person.getFirstName() + " " + person.getLastName());
 
+        Button debug = new Button("", VaadinIcon.COG.create(),
+                e -> UI.getCurrent().navigate(DebugView.class));
+        debug.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        debug.setAriaLabel("Open debug dashboard");
+
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logout = new Button("Log out", e -> authContext.logout());
@@ -233,10 +238,10 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         meta.setAlignItems(Alignment.CENTER);
         meta.setFlexGrow(1);
 
-        HorizontalLayout actions = new HorizontalLayout(edit, delete);
-        actions.setSpacing(false);
+        HorizontalLayout cardActions = new HorizontalLayout(edit, delete);
+        cardActions.setSpacing(false);
 
-        HorizontalLayout cardHeader = new HorizontalLayout(meta, actions);
+        HorizontalLayout cardHeader = new HorizontalLayout(meta, cardActions);
         cardHeader.setWidthFull();
         cardHeader.setAlignItems(Alignment.CENTER);
         cardHeader.setJustifyContentMode(JustifyContentMode.BETWEEN);
