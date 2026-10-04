@@ -6,6 +6,7 @@ import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -150,11 +151,14 @@ public class PeopleView extends VerticalLayout {
                 e -> UI.getCurrent().navigate(DashboardView.class));
         dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
+        ThemeToggle themeToggle = new ThemeToggle();
+
         Button logoutButton = new Button("Log out", e -> authContext.logout());
         logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout buttons = new HorizontalLayout(dashboardButton, logoutButton);
+        HorizontalLayout buttons = new HorizontalLayout(dashboardButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
+        buttons.setAlignItems(Alignment.CENTER);
 
         HorizontalLayout header = new HorizontalLayout(title, buttons);
         header.setWidthFull();
