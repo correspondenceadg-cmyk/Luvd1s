@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -34,6 +35,17 @@ public class InteractionService {
             return List.of();
         }
         return interactions.findByPersonIdOrderByOccurredAtDesc(person.getId());
+    }
+
+    public List<Interaction> findAllForCurrentUser() {
+        User owner = userService.getCurrentUser();
+        if (owner == null) return List.of();
+
+        List<Interaction> all = new ArrayList<>();
+        for (Person p : people.findByOwnerOrderByLastNameAscFirstNameAsc(owner)) {
+            all.addAll(interactions.findByPersonIdOrderByOccurredAtDesc(p.getId()));
+        }
+        return all;
     }
 
     @Transactional
