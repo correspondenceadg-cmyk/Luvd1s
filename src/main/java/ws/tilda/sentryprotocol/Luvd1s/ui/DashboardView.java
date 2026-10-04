@@ -1,12 +1,12 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
-import jakarta.annotation.security.PermitAll;
-
+import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -21,6 +21,10 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.security.AuthenticationContext;
+import jakarta.annotation.security.PermitAll;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @PermitAll
@@ -44,37 +49,108 @@ public class DashboardView extends VerticalLayout {
     private final PersonService personService;
     private final InteractionService interactionService;
     private final TagService tagService;
+    private final AuthenticationContext authContext;
+
+    private final VerticalLayout content = new VerticalLayout();
 
     public DashboardView(PersonService personService,
                          InteractionService interactionService,
-                         TagService tagService) {
+                         TagService tagService,
+                         AuthenticationContext authContext) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.tagService = tagService;
+        this.authContext = authContext;
 
-        setSizeFull();
         setPadding(true);
         setSpacing(true);
 
-        List<Person> people = personService.findAll();
+        add(buildHeader());
+
+        content.setPadding(false);
+        content.setSpacing(true);
+        content.setWidthFull();
+        content.add(buildSkeleton());
+        add(content);
+
+        loadAsync();
+    }
+
+    private void loadAsync() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UI ui = UI.getCurrent();
+
+        CompletableFuture.runAsync(() -> {
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                List<Person> people = personService.findAll();
+
+                Map<Long, Integer> interactionCounts = new LinkedHashMap<>();
+                for (Person p : people) {
+                    interactionCounts.put(p.getId(), interactionService.findByPerson(p).size());
+                }
+
+                List<Tag> tags = tagService.findAll();
+
+                ui.access(() -> {
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    try {
+                        renderDashboard(people, interactionCounts, tags);
+                    } finally {
+                        SecurityContextHolder.clearContext();
+                    }
+                });
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        });
+    }
+
+    private VerticalLayout buildSkeleton() {
+        VerticalLayout skeleton = new VerticalLayout();
+        skeleton.setPadding(false);
+        skeleton.setSpacing(true);
+        skeleton.setWidthFull();
+
+        skeleton.add(SkeletonViews.statCards(4));
+        skeleton.add(new H3("Contacts by company"));
+        skeleton.add(SkeletonViews.barChart(3));
+        skeleton.add(new H3("Contacts by tag"));
+        skeleton.add(SkeletonViews.barChart(4));
+        skeleton.add(new H3("Birthdays this month"));
+        skeleton.add(SkeletonViews.cardList(2));
+        skeleton.add(new H3("Reach out soon"));
+        skeleton.add(SkeletonViews.cardList(3));
+
+        return skeleton;
+    }
+
+    private void renderDashboard(List<Person> people,
+                                 Map<Long, Integer> interactionCounts,
+                                 List<Tag> tags) {
         LocalDate today = LocalDate.now();
 
-        add(buildHeader());
-        add(buildStatCards(people, today));
+        content.removeAll();
+        content.add(buildStatCards(people, today, interactionCounts));
 
-        if (!people.isEmpty()) {
-            add(new H3("Contacts by company"));
-            add(buildBarChart(groupByCompany(people)));
+        if (people.isEmpty()) {
+            content.add(emptySection(
+                    "No contacts yet",
+                    "Add your first contact on the People page to see breakdowns here."
+            ));
+        } else {
+            content.add(new H3("Contacts by company"));
+            content.add(buildBarChart(groupByCompany(people)));
 
-            add(new H3("Contacts by tag"));
-            add(buildBarChart(groupByTag(people)));
+            content.add(new H3("Contacts by tag"));
+            content.add(buildBarChart(groupByTag(people, tags)));
         }
 
-        add(new H3("Birthdays this month"));
-        add(buildBirthdayList(people, today.getMonth()));
+        content.add(new H3("Birthdays this month"));
+        content.add(buildBirthdayList(people, today.getMonth()));
 
-        add(new H3("Reach out soon"));
-        add(buildStaleList(people, today));
+        content.add(new H3("Reach out soon"));
+        content.add(buildStaleList(people, today));
     }
 
     private HorizontalLayout buildHeader() {
@@ -84,22 +160,28 @@ public class DashboardView extends VerticalLayout {
                 e -> UI.getCurrent().navigate(PeopleView.class));
         peopleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        HorizontalLayout header = new HorizontalLayout(title, peopleButton);
+        Button logoutButton = new Button("Log out", e -> authContext.logout());
+        logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+        HorizontalLayout buttons = new HorizontalLayout(peopleButton, logoutButton);
+        buttons.setSpacing(true);
+
+        HorizontalLayout header = new HorizontalLayout(title, buttons);
         header.setWidthFull();
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
         header.setAlignItems(Alignment.CENTER);
         return header;
     }
 
-    private HorizontalLayout buildStatCards(List<Person> people, LocalDate today) {
+    private HorizontalLayout buildStatCards(List<Person> people,
+                                            LocalDate today,
+                                            Map<Long, Integer> interactionCounts) {
         long total = people.size();
         long birthdays = people.stream()
-                .filter(p -> p.getBirthday() != null
-                        && p.getBirthday().getMonth() == today.getMonth())
+                .filter(p -> p.getBirthday() != null && p.getBirthday().getMonth() == today.getMonth())
                 .count();
         long stale = people.stream().filter(p -> isStale(p, today)).count();
-        long logged = interactionService.findByPerson(null).isEmpty() ? 0 : 0;
-        long interactions = countInteractions(people);
+        long interactions = interactionCounts.values().stream().mapToLong(Integer::longValue).sum();
 
         HorizontalLayout row = new HorizontalLayout(
                 statCard("Contacts", total, "#2196F3"),
@@ -111,14 +193,6 @@ public class DashboardView extends VerticalLayout {
         row.getStyle().set("flex-wrap", "wrap");
         row.getStyle().set("gap", "12px");
         return row;
-    }
-
-    private long countInteractions(List<Person> people) {
-        long total = 0;
-        for (Person p : people) {
-            total += interactionService.findByPerson(p).size();
-        }
-        return total;
     }
 
     private Div statCard(String label, long value, String color) {
@@ -160,9 +234,9 @@ public class DashboardView extends VerticalLayout {
                 ));
     }
 
-    private Map<String, Long> groupByTag(List<Person> people) {
+    private Map<String, Long> groupByTag(List<Person> people, List<Tag> tags) {
         Map<String, Long> counts = new LinkedHashMap<>();
-        for (Tag tag : tagService.findAll()) {
+        for (Tag tag : tags) {
             long count = people.stream()
                     .filter(p -> p.getTags().contains(tag))
                     .count();
@@ -187,14 +261,11 @@ public class DashboardView extends VerticalLayout {
         container.setWidthFull();
 
         if (data.isEmpty()) {
-            Span empty = new Span("No data yet.");
-            empty.getStyle().set("color", "#888").set("font-style", "italic");
-            container.add(empty);
+            container.add(emptyInline("No data to show yet."));
             return container;
         }
 
         long max = data.values().stream().max(Long::compare).orElse(1L);
-
         for (Map.Entry<String, Long> entry : data.entrySet()) {
             container.add(barRow(entry.getKey(), entry.getValue(), max, "#2196F3"));
         }
@@ -252,9 +323,8 @@ public class DashboardView extends VerticalLayout {
                 .toList();
 
         if (birthdayPeople.isEmpty()) {
-            Span empty = new Span("No birthdays in " + month.getDisplayName(TextStyle.FULL, Locale.ENGLISH) + ".");
-            empty.getStyle().set("color", "#888").set("font-style", "italic");
-            container.add(empty);
+            container.add(emptyInline("No birthdays in "
+                    + month.getDisplayName(TextStyle.FULL, Locale.ENGLISH) + "."));
             return container;
         }
 
@@ -296,9 +366,11 @@ public class DashboardView extends VerticalLayout {
                 .toList();
 
         if (stale.isEmpty()) {
-            Span empty = new Span("Everyone's been contacted recently.");
-            empty.getStyle().set("color", "#888").set("font-style", "italic");
-            container.add(empty);
+            if (people.isEmpty()) {
+                container.add(emptyInline("Add contacts to start tracking who to reach out to."));
+            } else {
+                container.add(emptyInline("Everyone's been contacted recently. Nice work."));
+            }
             return container;
         }
 
@@ -337,6 +409,44 @@ public class DashboardView extends VerticalLayout {
             container.add(row);
         }
         return container;
+    }
+
+    private Span emptyInline(String message) {
+        Span span = new Span(message);
+        span.getStyle()
+                .set("color", "#888")
+                .set("font-style", "italic")
+                .set("display", "block")
+                .set("padding", "8px 0");
+        return span;
+    }
+
+    private VerticalLayout emptySection(String title, String subtitle) {
+        VerticalLayout box = new VerticalLayout();
+        box.setPadding(true);
+        box.setSpacing(false);
+        box.setWidthFull();
+        box.getStyle()
+                .set("background-color", "#fafafa")
+                .set("border", "1px dashed #ddd")
+                .set("border-radius", "8px")
+                .set("text-align", "center");
+
+        Span titleSpan = new Span(title);
+        titleSpan.getStyle()
+                .set("font-weight", "600")
+                .set("color", "#555")
+                .set("display", "block");
+
+        Span subtitleSpan = new Span(subtitle);
+        subtitleSpan.getStyle()
+                .set("color", "#888")
+                .set("font-size", "0.9em")
+                .set("display", "block");
+
+        box.add(titleSpan, subtitleSpan);
+        box.setAlignItems(Alignment.CENTER);
+        return box;
     }
 
     private boolean isStale(Person person, LocalDate today) {
