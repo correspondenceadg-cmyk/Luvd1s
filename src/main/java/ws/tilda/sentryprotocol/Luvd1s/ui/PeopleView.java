@@ -7,11 +7,13 @@ import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
+import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -74,11 +76,13 @@ public class PeopleView extends VerticalLayout {
     private final ComboBox<Tag> filterTag = new ComboBox<>("Filter by tag");
 
     private final Button save = new Button("Save");
+    private final Button cancel = new Button("Cancel");
     private final Button delete = new Button("Delete");
     private final Button newPerson = new Button("New");
     private final Button logInteraction = new Button("Log interaction", VaadinIcon.BOLT.create());
 
     private Person current;
+    private boolean dirty = false;
 
     public PeopleView(PersonService personService,
                       InteractionService interactionService,
@@ -100,6 +104,7 @@ public class PeopleView extends VerticalLayout {
         filterTag.setItemLabelGenerator(Tag::getName);
         filterTag.setClearButtonVisible(true);
         filterTag.setWidthFull();
+        filterTag.setAriaLabel("Filter people by tag");
         filterTag.addValueChangeListener(e -> applyFilter());
 
         gridContainer.setPadding(false);
@@ -150,11 +155,13 @@ public class PeopleView extends VerticalLayout {
         Button dashboardButton = new Button("Dashboard", VaadinIcon.CHART.create(),
                 e -> UI.getCurrent().navigate(DashboardView.class));
         dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        dashboardButton.setAriaLabel("Go to dashboard");
 
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logoutButton = new Button("Log out", e -> authContext.logout());
         logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        logoutButton.setAriaLabel("Log out of your account");
 
         HorizontalLayout buttons = new HorizontalLayout(dashboardButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
@@ -172,6 +179,7 @@ public class PeopleView extends VerticalLayout {
             Button open = new Button("Open", e ->
                     UI.getCurrent().navigate(PersonDetailView.class, person.getId()));
             open.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+            open.setAriaLabel("Open " + person.getFirstName() + " " + person.getLastName());
             return open;
         }).setHeader("").setAutoWidth(true).setFlexGrow(0);
 
@@ -186,6 +194,8 @@ public class PeopleView extends VerticalLayout {
             Button log = new Button(VaadinIcon.BOLT.create(), e ->
                     new InteractionDialog(interactionService, person, this::onInteractionSaved).open());
             log.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+            log.setAriaLabel("Log interaction with "
+                    + person.getFirstName() + " " + person.getLastName());
             return log;
         }).setHeader("Log").setAutoWidth(true).setFlexGrow(0);
 
@@ -227,10 +237,29 @@ public class PeopleView extends VerticalLayout {
         tagsField.setItemLabelGenerator(Tag::getName);
         binder.forField(tagsField).bind(Person::getTags, Person::setTags);
 
+        trackDirty(firstName);
+        trackDirty(lastName);
+        trackDirty(email);
+        trackDirty(phone);
+        trackDirty(company);
+        trackDirty(jobTitle);
+        trackDirty(birthday);
+        trackDirty(notes);
+        trackDirty(tagsField);
+
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         save.addClickListener(e -> savePerson());
+        save.setAriaLabel("Save person");
+
+        cancel.addClickListener(e -> attemptCancel());
+        cancel.setAriaLabel("Cancel edits and discard changes");
+
         delete.addClickListener(e -> deletePerson());
+        delete.setAriaLabel("Delete person");
+
         newPerson.addClickListener(e -> edit(null));
+        newPerson.setAriaLabel("Create new person");
+
         logInteraction.addClickListener(e -> {
             if (current != null && current.getId() != null) {
                 new InteractionDialog(interactionService, current, this::onInteractionSaved).open();
@@ -238,6 +267,22 @@ public class PeopleView extends VerticalLayout {
                 Notification.show("Select a person first");
             }
         });
+        logInteraction.setAriaLabel("Log interaction with the currently edited person");
+    }
+
+    @SuppressWarnings({"rawtypes"})
+    private void trackDirty(HasValue field) {
+        field.addValueChangeListener(event -> {
+            if (event.isFromClient()) {
+                setDirty(true);
+            }
+        });
+    }
+
+    private void setDirty(boolean value) {
+        if (this.dirty == value) return;
+        this.dirty = value;
+        save.setEnabled(value);
     }
 
     private VerticalLayout buildFormPanel() {
@@ -247,7 +292,9 @@ public class PeopleView extends VerticalLayout {
         );
         form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
 
-        HorizontalLayout actions = new HorizontalLayout(save, delete, newPerson);
+        HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, newPerson);
+        actions.getStyle().set("flex-wrap", "wrap");
+
         VerticalLayout panel = new VerticalLayout(form, actions, logInteraction);
         panel.setPadding(false);
         panel.setSpacing(true);
@@ -294,6 +341,30 @@ public class PeopleView extends VerticalLayout {
             logInteraction.setEnabled(true);
         }
         binder.setBean(current);
+        setDirty(false);
+    }
+
+    private void attemptCancel() {
+        if (!dirty) return;
+
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Discard changes?");
+        dialog.setText("Your unsaved edits will be lost.");
+        dialog.setCancelable(true);
+        dialog.setCancelText("Keep editing");
+        dialog.setConfirmText("Discard");
+        dialog.setConfirmButtonTheme("error primary");
+        dialog.addConfirmListener(e -> revert());
+        dialog.open();
+    }
+
+    private void revert() {
+        if (current == null) return;
+        if (current.getId() == null) {
+            edit(null);
+        } else {
+            personService.findById(current.getId()).ifPresent(this::edit);
+        }
     }
 
     private void savePerson() {
@@ -318,6 +389,7 @@ public class PeopleView extends VerticalLayout {
                     .thenComparing(Person::getFirstName, Comparator.nullsLast(String::compareToIgnoreCase)));
         }
 
+        edit(saved);
         applyFilter();
         Notification.show("Saved");
     }
