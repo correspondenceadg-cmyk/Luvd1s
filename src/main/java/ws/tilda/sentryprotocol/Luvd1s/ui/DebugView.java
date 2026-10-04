@@ -1,8 +1,10 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.AuditLog;
+import ws.tilda.sentryprotocol.Luvd1s.service.AiChatService;
 import ws.tilda.sentryprotocol.Luvd1s.service.DebugService;
 import ws.tilda.sentryprotocol.Luvd1s.service.RequestRecord;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.AiChatPanel;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -41,12 +43,16 @@ public class DebugView extends VerticalLayout {
 
     private final DebugService debugService;
     private final AuthenticationContext authContext;
+    private final AiChatService aiChatService;
 
     private String crtMode = "subtle";
 
-    public DebugView(DebugService debugService, AuthenticationContext authContext) {
+    public DebugView(DebugService debugService,
+                     AuthenticationContext authContext,
+                     AiChatService aiChatService) {
         this.debugService = debugService;
         this.authContext = authContext;
+        this.aiChatService = aiChatService;
 
         setPadding(false);
         setSpacing(true);
@@ -65,6 +71,8 @@ public class DebugView extends VerticalLayout {
         add(buildDatabaseCard());
         add(buildSystemCard());
         add(buildApiCard());
+
+        add(new AiChatPanel(aiChatService));
 
         add(buildCrtOverlay());
         add(buildBootOverlay());
@@ -212,17 +220,20 @@ public class DebugView extends VerticalLayout {
         heading.getStyle().set("margin", "0 0 12px 0");
         card.add(heading);
 
-        for (Map.Entry<String, String> e : debugService.aiStats().entrySet()) {
-            card.add(statRow(e.getKey(), e.getValue()));
-        }
+        card.add(statRow("Provider configured", debugService.aiStats().get("configured")));
+        card.add(statRow("Session activated", aiChatService.isEnabledForSession() ? "yes" : "no"));
 
-        Span note = new Span("AI summaries run on Groq's llama-3.3-70b-versatile. " +
-                "Metrics are recorded per call in the Business counters card.");
+        Span note = new Span(
+                "AI is off by default and only activates when the chat panel " +
+                "is opened. Every outbound message passes through the PII scrubber " +
+                "which redacts emails, phones, URLs, IPs, handles, and the names of " +
+                "any referenced contacts. No CRM data is sent automatically.");
         note.getStyle()
                 .set("display", "block")
                 .set("color", "var(--lumo-secondary-text-color)")
                 .set("font-size", "0.85em")
-                .set("margin-top", "10px");
+                .set("margin-top", "10px")
+                .set("line-height", "1.4");
         card.add(note);
 
         return card;
@@ -249,44 +260,39 @@ public class DebugView extends VerticalLayout {
         return card;
     }
 
-    private HorizontalLayout requestRow(RequestRecord r) {
-        Span time = mono(timeAgo(r.timestamp()), "45px");
-        Span method = badge(r.method(), methodColor(r.method()), "60px");
-        Span path = mono(truncate(r.path(), 26), null);
-        path.getStyle().set("flex", "1");
-        path.getStyle().set("min-width", "0");
-        Span status = badge(String.valueOf(r.status()), statusColor(r.status()), "45px");
-        Span duration = mono(r.durationMs() + "ms", "55px");
-        duration.getStyle().set("text-align", "right");
+    private Div requestRow(RequestRecord r) {
+        Div wrapper = new Div();
+        wrapper.setWidthFull();
+        wrapper.getStyle().set("padding", "6px 0");
+        wrapper.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
 
-        HorizontalLayout row = new HorizontalLayout(time, method, path, status, duration);
+        HorizontalLayout row = new HorizontalLayout(
+                mono(timeAgo(r.timestamp()), "45px"),
+                badge(r.method(), methodColor(r.method()), "60px"),
+                mono(truncate(r.path(), 26), null),
+                badge(String.valueOf(r.status()), statusColor(r.status()), "45px"),
+                mono(r.durationMs() + "ms", "55px")
+        );
         row.setWidthFull();
         row.setAlignItems(Alignment.CENTER);
         row.setSpacing(true);
-        row.getStyle().set("padding", "6px 0");
-        row.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
         row.getStyle().set("flex-wrap", "wrap");
         row.getStyle().set("gap", "6px");
 
+        Span path = (Span) row.getComponentAt(2);
+        path.getStyle().set("flex", "1");
+        path.getStyle().set("min-width", "0");
+
         String user = r.username() != null ? r.username() : "—";
-        Span userSpan = mono("by " + user, null);
+        Span userSpan = new Span("by " + user);
         userSpan.getStyle()
                 .set("font-size", "0.75em")
                 .set("color", "var(--lumo-secondary-text-color)")
                 .set("display", "block")
-                .set("margin-top", "-4px");
+                .set("margin-top", "2px");
 
-        VerticalLayout wrapper = new VerticalLayout(row, userSpan);
-        wrapper.setPadding(false);
-        wrapper.setSpacing(false);
-        wrapper.setWidthFull();
-
-        // Return a HorizontalLayout wrapper for API compat with the card.add() callsite
-        HorizontalLayout container = new HorizontalLayout(wrapper);
-        container.setWidthFull();
-        container.setPadding(false);
-        container.setSpacing(false);
-        return container;
+        wrapper.add(row, userSpan);
+        return wrapper;
     }
 
     private Div buildAuditCard() {
