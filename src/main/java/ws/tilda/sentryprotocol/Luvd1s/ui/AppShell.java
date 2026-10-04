@@ -6,9 +6,12 @@ import com.vaadin.flow.component.page.Inline;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.AppShellSettings;
 import com.vaadin.flow.shared.communication.PushMode;
+import com.vaadin.flow.theme.Theme;
+import com.vaadin.flow.theme.lumo.Lumo;
 
 @Push(PushMode.AUTOMATIC)
 @StyleSheet("context://styles/skeleton.css")
+@Theme(themeClass = Lumo.class)
 public class AppShell implements AppShellConfigurator {
 
     @Override
