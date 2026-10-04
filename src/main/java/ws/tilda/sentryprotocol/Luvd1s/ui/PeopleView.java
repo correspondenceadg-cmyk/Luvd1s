@@ -7,6 +7,7 @@ import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.AiChatPanel;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.Feedback;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.HasValue;
@@ -65,6 +66,7 @@ public class PeopleView extends VerticalLayout {
     private final Binder<Person> binder = new Binder<>(Person.class);
     private final List<Person> cachedPeople = new ArrayList<>();
     private final VerticalLayout gridContainer = new VerticalLayout();
+    private VerticalLayout formPanel;
 
     private final TextField firstName = new TextField("First name");
     private final TextField lastName = new TextField("Last name");
@@ -120,8 +122,9 @@ public class PeopleView extends VerticalLayout {
         gridContainer.setWidthFull();
         gridContainer.add(SkeletonViews.grid(8));
 
-        add(filterTag, gridContainer, new H3("Edit person"), buildFormPanel());
+        formPanel = buildFormPanel();
 
+        add(filterTag, gridContainer, new H3("Edit person"), formPanel);
         add(new AiChatPanel(aiChatService));
 
         edit(null);
@@ -334,6 +337,7 @@ public class PeopleView extends VerticalLayout {
     }
 
     private void onInteractionSaved() {
+        Feedback.fadeRefresh(gridContainer);
         applyFilter();
     }
 
@@ -387,7 +391,10 @@ public class PeopleView extends VerticalLayout {
     }
 
     private void savePerson() {
-        if (!binder.validate().isOk()) return;
+        if (!binder.validate().isOk()) {
+            Feedback.shake(formPanel);
+            return;
+        }
 
         Person saved = personService.save(current);
 
@@ -410,6 +417,9 @@ public class PeopleView extends VerticalLayout {
 
         edit(saved);
         applyFilter();
+
+        Feedback.pulseSuccess(save);
+        Feedback.fadeRefresh(gridContainer);
         Notification.show("Saved");
     }
 
@@ -420,6 +430,8 @@ public class PeopleView extends VerticalLayout {
         cachedPeople.removeIf(p -> Objects.equals(p.getId(), current.getId()));
         edit(null);
         applyFilter();
+
+        Feedback.fadeRefresh(gridContainer);
         Notification.show("Deleted");
     }
 }
