@@ -5,6 +5,11 @@
     border-radius: 6px;
 }
 
+html[theme~="dark"] .skeleton {
+    background: linear-gradient(90deg, #2a2a2a 0%, #383838 50%, #2a2a2a 100%);
+    background-size: 200% 100%;
+}
+
 @keyframes skeleton-shimmer {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -16,6 +21,11 @@
     background: #fafafa;
     border-left: 4px solid #e0e0e0;
     margin-bottom: 12px;
+}
+
+html[theme~="dark"] .skeleton-card {
+    background: var(--lumo-contrast-5pct);
+    border-left-color: var(--lumo-contrast-20pct);
 }
 
 .skeleton-card .skeleton + .skeleton {
