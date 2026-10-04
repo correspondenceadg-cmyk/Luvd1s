@@ -137,8 +137,8 @@
 					<execution>
 						<id>frontend</id>
 						<goals>
-							<prepare-frontend/>
-							<build-frontend/>
+							<goal>prepare-frontend</goal>
+							<goal>build-frontend</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -153,8 +153,8 @@
 				<executions>
 					<execution>
 						<goals>
-							<integration-test/>
-							<verify/>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
 						</goals>
 					</execution>
 				</executions>
