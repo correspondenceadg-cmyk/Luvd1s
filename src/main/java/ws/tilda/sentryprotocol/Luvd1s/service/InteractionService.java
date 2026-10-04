@@ -9,7 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,20 +21,17 @@ public class InteractionService {
     private final UserService userService;
     private final AuditLogService auditLogService;
     private final ObservabilityService observability;
-    private final AiService aiService;
 
     public InteractionService(InteractionRepository interactions,
                               PersonRepository people,
                               UserService userService,
                               AuditLogService auditLogService,
-                              ObservabilityService observability,
-                              AiService aiService) {
+                              ObservabilityService observability) {
         this.interactions = interactions;
         this.people = people;
         this.userService = userService;
         this.auditLogService = auditLogService;
         this.observability = observability;
-        this.aiService = aiService;
     }
 
     @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
@@ -61,10 +57,6 @@ public class InteractionService {
     public Interaction save(Interaction interaction) {
         boolean isNew = interaction.getId() == null;
 
-        if (isNew) {
-            generateAiSummary(interaction);
-        }
-
         Interaction saved = interactions.save(interaction);
         refreshLastContacted(interaction.getPerson());
 
@@ -84,17 +76,6 @@ public class InteractionService {
         );
 
         return saved;
-    }
-
-    private void generateAiSummary(Interaction interaction) {
-        String raw = interaction.getSummary();
-        if (raw == null || raw.isBlank()) return;
-
-        long start = System.currentTimeMillis();
-        aiService.summarize(raw).ifPresent(interaction::setAiSummary);
-        long elapsed = System.currentTimeMillis() - start;
-
-        observability.recordAiSummary(Duration.ofMillis(elapsed));
     }
 
     @Transactional
