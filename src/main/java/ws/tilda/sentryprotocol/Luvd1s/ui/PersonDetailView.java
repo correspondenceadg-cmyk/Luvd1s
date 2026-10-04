@@ -1,5 +1,7 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
+import jakarta.annotation.security.PermitAll;
+
 import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
