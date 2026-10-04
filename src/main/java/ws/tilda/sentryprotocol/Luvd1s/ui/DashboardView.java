@@ -3,10 +3,12 @@ package ws.tilda.sentryprotocol.Luvd1s.ui;
 import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
+import ws.tilda.sentryprotocol.Luvd1s.service.AiChatService;
 import ws.tilda.sentryprotocol.Luvd1s.service.AnalyticsService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.AiChatPanel;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.BarChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.LineChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
@@ -56,6 +58,7 @@ public class DashboardView extends VerticalLayout {
     private final TagService tagService;
     private final AnalyticsService analyticsService;
     private final AuthenticationContext authContext;
+    private final AiChatService aiChatService;
 
     private final VerticalLayout content = new VerticalLayout();
 
@@ -63,16 +66,18 @@ public class DashboardView extends VerticalLayout {
                          InteractionService interactionService,
                          TagService tagService,
                          AnalyticsService analyticsService,
-                         AuthenticationContext authContext) {
+                         AuthenticationContext authContext,
+                         AiChatService aiChatService) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.tagService = tagService;
         this.analyticsService = analyticsService;
         this.authContext = authContext;
+        this.aiChatService = aiChatService;
 
         setPadding(false);
         setSpacing(true);
-        getStyle().set("padding", "12px");
+        getStyle().set("padding", "16px");
         getStyle().set("box-sizing", "border-box");
         setWidthFull();
 
@@ -83,6 +88,8 @@ public class DashboardView extends VerticalLayout {
         content.setWidthFull();
         content.add(buildSkeleton());
         add(content);
+
+        add(new AiChatPanel(aiChatService));
 
         loadAsync();
     }
@@ -133,7 +140,6 @@ public class DashboardView extends VerticalLayout {
                                  List<Interaction> interactions,
                                  List<Tag> tags) {
         LocalDate today = LocalDate.now();
-
         content.removeAll();
         content.add(buildStatCards(people, interactions, today));
 
@@ -179,20 +185,18 @@ public class DashboardView extends VerticalLayout {
         peopleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         peopleButton.setAriaLabel("Go to people list");
 
+        Button debugButton = new Button("Debug", VaadinIcon.COG.create(),
+                e -> UI.getCurrent().navigate(DebugView.class));
+        debugButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        debugButton.setAriaLabel("Open debug dashboard");
+
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logoutButton = new Button("Log out", e -> authContext.logout());
-        
-
-
-        Button debug = new Button("", VaadinIcon.COG.create(),
-        e -> UI.getCurrent().navigate(DebugView.class));
-debug.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-debug.setAriaLabel("Open debug dashboard");
- logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         logoutButton.setAriaLabel("Log out of your account");
 
-        HorizontalLayout buttons = new HorizontalLayout(peopleButton, themeToggle, logoutButton);
+        HorizontalLayout buttons = new HorizontalLayout(peopleButton, debugButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
         buttons.setAlignItems(Alignment.CENTER);
         buttons.getStyle().set("flex-wrap", "wrap");
