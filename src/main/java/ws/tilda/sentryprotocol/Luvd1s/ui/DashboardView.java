@@ -182,7 +182,14 @@ public class DashboardView extends VerticalLayout {
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logoutButton = new Button("Log out", e -> authContext.logout());
-        logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        
+
+
+        Button debug = new Button("", VaadinIcon.COG.create(),
+        e -> UI.getCurrent().navigate(DebugView.class));
+debug.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+debug.setAriaLabel("Open debug dashboard");
+ logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         logoutButton.setAriaLabel("Log out of your account");
 
         HorizontalLayout buttons = new HorizontalLayout(peopleButton, themeToggle, logoutButton);
