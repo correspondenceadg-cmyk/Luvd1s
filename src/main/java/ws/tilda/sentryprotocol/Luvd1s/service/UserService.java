@@ -36,10 +36,14 @@ public class UserService implements UserDetailsService {
         User user = users.findByUsername(normalized)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        String[] roles = "admin".equals(user.getUsername())
+                ? new String[]{"USER", "ADMIN"}
+                : new String[]{"USER"};
+
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPasswordHash())
-                .roles("USER")
+                .roles(roles)
                 .build();
     }
 
