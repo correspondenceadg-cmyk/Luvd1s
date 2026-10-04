@@ -68,6 +68,25 @@ public class InteractionService {
         refreshLastContacted(person);
     }
 
+    @Transactional
+    public boolean deleteById(Long id) {
+        User owner = userService.getCurrentUser();
+        if (owner == null) return false;
+
+        Interaction interaction = interactions.findById(id).orElse(null);
+        if (interaction == null) return false;
+
+        Person person = interaction.getPerson();
+        if (person == null || person.getOwner() == null
+                || !person.getOwner().getId().equals(owner.getId())) {
+            return false;
+        }
+
+        interactions.delete(interaction);
+        refreshLastContacted(person);
+        return true;
+    }
+
     private void refreshLastContacted(Person person) {
         LocalDateTime latest = interactions
                 .findByPersonIdOrderByOccurredAtDesc(person.getId())
