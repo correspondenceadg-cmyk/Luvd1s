@@ -161,6 +161,13 @@ public class PeopleView extends VerticalLayout {
         dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         dashboardButton.setAriaLabel("Go to dashboard");
 
+
+Button debugButton = new Button("Debug", VaadinIcon.COG.create(),
+        e -> UI.getCurrent().navigate(DebugView.class));
+debugButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+debugButton.setAriaLabel("Open debug dashboard");
+
+
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logoutButton = new Button("Log out", e -> authContext.logout());
