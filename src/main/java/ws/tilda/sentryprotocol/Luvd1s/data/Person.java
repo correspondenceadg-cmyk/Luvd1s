@@ -14,6 +14,9 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(optional = false)
+    private User owner;
+
     @NotBlank
     private String firstName;
 
@@ -43,6 +46,9 @@ public class Person {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public User getOwner() { return owner; }
+    public void setOwner(User owner) { this.owner = owner; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
