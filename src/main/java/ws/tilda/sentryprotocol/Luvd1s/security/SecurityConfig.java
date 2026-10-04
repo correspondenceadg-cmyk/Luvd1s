@@ -55,6 +55,11 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/register").permitAll()
                 .requestMatchers("/fonts/**", "/styles/**").permitAll()
+                .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**"
+                ).permitAll()
         );
 
         http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {
