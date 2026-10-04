@@ -50,13 +50,15 @@ public class DebugView extends VerticalLayout {
 
         setPadding(false);
         setSpacing(true);
-        getStyle().set("padding", "12px");
+        getStyle().set("padding", "16px");
         getStyle().set("box-sizing", "border-box");
+        getStyle().set("overflow-x", "hidden");
         setWidthFull();
 
         add(buildHeader());
         add(buildObservabilityCard());
         add(buildBusinessCountersCard());
+        add(buildAiCard());
         add(buildRecentRequestsCard());
         add(buildAuditCard());
         add(buildJvmCard());
@@ -103,7 +105,7 @@ public class DebugView extends VerticalLayout {
                 e -> UI.getCurrent().navigate(DashboardView.class));
         dashboard.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        Button crtToggle = new Button("CRT: Subtle", VaadinIcon.EYE.create());
+        Button crtToggle = new Button("CRT: " + capitalize(crtMode), VaadinIcon.EYE.create());
         crtToggle.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         crtToggle.setAriaLabel("Cycle CRT display mode");
         crtToggle.addClickListener(e -> {
@@ -135,6 +137,7 @@ public class DebugView extends VerticalLayout {
     }
 
     private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return s;
         return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
 
@@ -151,7 +154,6 @@ public class DebugView extends VerticalLayout {
             card.add(statRow(e.getKey(), e.getValue()));
         }
 
-        card.add(new Span(""));
         Span poolLabel = new Span("Connection pool");
         poolLabel.getStyle()
                 .set("display", "block")
@@ -201,6 +203,31 @@ public class DebugView extends VerticalLayout {
         return card;
     }
 
+    private Div buildAiCard() {
+        Div card = new Div();
+        card.addClassName("debug-card");
+        card.setWidthFull();
+
+        H3 heading = new H3("AI");
+        heading.getStyle().set("margin", "0 0 12px 0");
+        card.add(heading);
+
+        for (Map.Entry<String, String> e : debugService.aiStats().entrySet()) {
+            card.add(statRow(e.getKey(), e.getValue()));
+        }
+
+        Span note = new Span("AI summaries run on Groq's llama-3.3-70b-versatile. " +
+                "Metrics are recorded per call in the Business counters card.");
+        note.getStyle()
+                .set("display", "block")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "0.85em")
+                .set("margin-top", "10px");
+        card.add(note);
+
+        return card;
+    }
+
     private Div buildRecentRequestsCard() {
         Div card = new Div();
         card.addClassName("debug-card");
@@ -223,25 +250,43 @@ public class DebugView extends VerticalLayout {
     }
 
     private HorizontalLayout requestRow(RequestRecord r) {
-        Span time = mono(timeAgo(r.timestamp()), "60px");
-        Span method = badge(r.method(), methodColor(r.method()), "70px");
-        Span path = mono(truncate(r.path(), 34), null);
+        Span time = mono(timeAgo(r.timestamp()), "45px");
+        Span method = badge(r.method(), methodColor(r.method()), "60px");
+        Span path = mono(truncate(r.path(), 26), null);
         path.getStyle().set("flex", "1");
         path.getStyle().set("min-width", "0");
-        Span user = mono(r.username() != null ? r.username() : "—", "80px");
-        Span status = badge(String.valueOf(r.status()), statusColor(r.status()), "50px");
-        Span duration = mono(r.durationMs() + "ms", "65px");
+        Span status = badge(String.valueOf(r.status()), statusColor(r.status()), "45px");
+        Span duration = mono(r.durationMs() + "ms", "55px");
         duration.getStyle().set("text-align", "right");
 
-        HorizontalLayout row = new HorizontalLayout(time, method, path, user, status, duration);
+        HorizontalLayout row = new HorizontalLayout(time, method, path, status, duration);
         row.setWidthFull();
         row.setAlignItems(Alignment.CENTER);
         row.setSpacing(true);
         row.getStyle().set("padding", "6px 0");
         row.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
         row.getStyle().set("flex-wrap", "wrap");
-        row.getStyle().set("gap", "8px");
-        return row;
+        row.getStyle().set("gap", "6px");
+
+        String user = r.username() != null ? r.username() : "—";
+        Span userSpan = mono("by " + user, null);
+        userSpan.getStyle()
+                .set("font-size", "0.75em")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("display", "block")
+                .set("margin-top", "-4px");
+
+        VerticalLayout wrapper = new VerticalLayout(row, userSpan);
+        wrapper.setPadding(false);
+        wrapper.setSpacing(false);
+        wrapper.setWidthFull();
+
+        // Return a HorizontalLayout wrapper for API compat with the card.add() callsite
+        HorizontalLayout container = new HorizontalLayout(wrapper);
+        container.setWidthFull();
+        container.setPadding(false);
+        container.setSpacing(false);
+        return container;
     }
 
     private Div buildAuditCard() {
@@ -266,15 +311,10 @@ public class DebugView extends VerticalLayout {
     }
 
     private HorizontalLayout auditRow(AuditLog a) {
-        Span time = mono(timeAgo(a.getCreatedAt()), "60px");
-        Span user = mono(a.getUsername() != null ? a.getUsername() : "—", "80px");
+        Span time = mono(timeAgo(a.getCreatedAt()), "45px");
+        Span user = mono(a.getUsername() != null ? a.getUsername() : "—", "65px");
         Span action = badge(a.getAction(), actionColor(a.getAction()), null);
-        Span target = mono(
-                a.getTargetType() != null
-                        ? a.getTargetType() + (a.getTargetId() != null ? " #" + a.getTargetId() : "")
-                        : "—",
-                "130px"
-        );
+
         Span details = new Span(a.getDetails() != null ? a.getDetails() : "");
         details.getStyle()
                 .set("color", "var(--lumo-secondary-text-color)")
@@ -282,14 +322,14 @@ public class DebugView extends VerticalLayout {
                 .set("flex", "1")
                 .set("min-width", "0");
 
-        HorizontalLayout row = new HorizontalLayout(time, user, action, target, details);
+        HorizontalLayout row = new HorizontalLayout(time, user, action, details);
         row.setWidthFull();
         row.setAlignItems(Alignment.CENTER);
         row.setSpacing(true);
         row.getStyle().set("padding", "6px 0");
         row.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
         row.getStyle().set("flex-wrap", "wrap");
-        row.getStyle().set("gap", "8px");
+        row.getStyle().set("gap", "6px");
         return row;
     }
 
@@ -303,8 +343,8 @@ public class DebugView extends VerticalLayout {
                 .set("overflow", "hidden")
                 .set("text-overflow", "ellipsis");
         if (width != null) {
-            span.getStyle().set("width", width);
-            span.getStyle().set("flex-shrink", "0");
+            span.getStyle().set("min-width", width);
+            span.getStyle().set("flex-shrink", "1");
         }
         return span;
     }
@@ -320,11 +360,11 @@ public class DebugView extends VerticalLayout {
                 .set("font-weight", "600")
                 .set("text-transform", "uppercase")
                 .set("letter-spacing", "0.3px")
-                .set("text-align", "center");
+                .set("text-align", "center")
+                .set("box-sizing", "border-box");
         if (width != null) {
-            span.getStyle().set("width", width);
+            span.getStyle().set("min-width", width);
             span.getStyle().set("flex-shrink", "0");
-            span.getStyle().set("box-sizing", "border-box");
         }
         return span;
     }
@@ -467,6 +507,8 @@ public class DebugView extends VerticalLayout {
         row.setAlignItems(Alignment.CENTER);
         row.setSpacing(true);
         row.getStyle().set("padding", "4px 0");
+        row.getStyle().set("flex-wrap", "wrap");
+        row.getStyle().set("gap", "8px");
         return row;
     }
 
