@@ -15,13 +15,16 @@ public class PersonService {
     private final PersonRepository people;
     private final UserService userService;
     private final AuditLogService auditLogService;
+    private final ObservabilityService observability;
 
     public PersonService(PersonRepository people,
                          UserService userService,
-                         AuditLogService auditLogService) {
+                         AuditLogService auditLogService,
+                         ObservabilityService observability) {
         this.people = people;
         this.userService = userService;
         this.auditLogService = auditLogService;
+        this.observability = observability;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -50,6 +53,12 @@ public class PersonService {
 
         Person saved = people.save(person);
 
+        if (isNew) {
+            observability.recordPersonCreated();
+        } else {
+            observability.recordPersonUpdated();
+        }
+
         auditLogService.record(
                 isNew ? "PERSON_CREATE" : "PERSON_UPDATE",
                 "Person",
@@ -68,6 +77,7 @@ public class PersonService {
         Long id = person.getId();
 
         people.delete(person);
+        observability.recordPersonDeleted();
 
         auditLogService.record("PERSON_DELETE", "Person", id, "Deleted " + name);
     }
