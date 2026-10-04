@@ -26,6 +26,7 @@ public class DebugService {
     private final RecentRequestsBuffer requestBuffer;
     private final ObservabilityService observability;
     private final AiService aiService;
+    private final RateLimiter rateLimiter;
 
     public DebugService(PersonRepository people,
                         InteractionRepository interactions,
@@ -34,7 +35,8 @@ public class DebugService {
                         AuditLogRepository auditLogs,
                         RecentRequestsBuffer requestBuffer,
                         ObservabilityService observability,
-                        AiService aiService) {
+                        AiService aiService,
+                        RateLimiter rateLimiter) {
         this.people = people;
         this.interactions = interactions;
         this.tags = tags;
@@ -43,6 +45,7 @@ public class DebugService {
         this.requestBuffer = requestBuffer;
         this.observability = observability;
         this.aiService = aiService;
+        this.rateLimiter = rateLimiter;
     }
 
     public Map<String, String> jvmStats() {
@@ -88,6 +91,8 @@ public class DebugService {
     public Map<String, String> aiStats() {
         Map<String, String> stats = new LinkedHashMap<>();
         stats.put("configured", aiService.isConfigured() ? "yes" : "no");
+        stats.put("rateLimitMax", String.valueOf(rateLimiter.maxRequests()));
+        stats.put("rateLimitWindow", (rateLimiter.windowSeconds() / 60) + " min");
         return stats;
     }
 
