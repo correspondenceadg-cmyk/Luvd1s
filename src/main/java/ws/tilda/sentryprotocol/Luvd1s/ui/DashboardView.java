@@ -1,12 +1,12 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
-import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -160,11 +160,14 @@ public class DashboardView extends VerticalLayout {
                 e -> UI.getCurrent().navigate(PeopleView.class));
         peopleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
+        ThemeToggle themeToggle = new ThemeToggle();
+
         Button logoutButton = new Button("Log out", e -> authContext.logout());
         logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout buttons = new HorizontalLayout(peopleButton, logoutButton);
+        HorizontalLayout buttons = new HorizontalLayout(peopleButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
+        buttons.setAlignItems(Alignment.CENTER);
 
         HorizontalLayout header = new HorizontalLayout(title, buttons);
         header.setWidthFull();
@@ -202,7 +205,7 @@ public class DashboardView extends VerticalLayout {
                 .set("min-width", "130px")
                 .set("padding", "16px")
                 .set("border-radius", "8px")
-                .set("background-color", "#f5f5f5")
+                .set("background-color", "var(--lumo-contrast-5pct)")
                 .set("border-left", "4px solid " + color);
 
         Span valueSpan = new Span(String.valueOf(value));
@@ -215,7 +218,7 @@ public class DashboardView extends VerticalLayout {
         Span labelSpan = new Span(label);
         labelSpan.getStyle()
                 .set("display", "block")
-                .set("color", "#666")
+                .set("color", "var(--lumo-secondary-text-color)")
                 .set("font-size", "0.85em")
                 .set("text-transform", "uppercase")
                 .set("letter-spacing", "0.5px");
@@ -281,7 +284,7 @@ public class DashboardView extends VerticalLayout {
 
         Div track = new Div();
         track.getStyle()
-                .set("background-color", "#e0e0e0")
+                .set("background-color", "var(--lumo-contrast-10pct)")
                 .set("height", "20px")
                 .set("border-radius", "10px")
                 .set("flex", "1")
@@ -301,7 +304,7 @@ public class DashboardView extends VerticalLayout {
                 .set("width", "30px")
                 .set("text-align", "right")
                 .set("font-weight", "600")
-                .set("color", "#333")
+                .set("color", "var(--lumo-body-text-color)")
                 .set("flex-shrink", "0");
 
         HorizontalLayout row = new HorizontalLayout(labelSpan, track, valueSpan);
@@ -343,7 +346,7 @@ public class DashboardView extends VerticalLayout {
             row.getStyle()
                     .set("padding", "8px 12px")
                     .set("border-left", "3px solid #E91E63")
-                    .set("background-color", "#fafafa")
+                    .set("background-color", "var(--lumo-contrast-5pct)")
                     .set("border-radius", "4px")
                     .set("margin-bottom", "6px");
 
@@ -402,7 +405,7 @@ public class DashboardView extends VerticalLayout {
             row.getStyle()
                     .set("padding", "8px 12px")
                     .set("border-left", "3px solid #FF9800")
-                    .set("background-color", "#fafafa")
+                    .set("background-color", "var(--lumo-contrast-5pct)")
                     .set("border-radius", "4px")
                     .set("margin-bottom", "6px");
 
@@ -414,7 +417,7 @@ public class DashboardView extends VerticalLayout {
     private Span emptyInline(String message) {
         Span span = new Span(message);
         span.getStyle()
-                .set("color", "#888")
+                .set("color", "var(--lumo-secondary-text-color)")
                 .set("font-style", "italic")
                 .set("display", "block")
                 .set("padding", "8px 0");
@@ -427,20 +430,20 @@ public class DashboardView extends VerticalLayout {
         box.setSpacing(false);
         box.setWidthFull();
         box.getStyle()
-                .set("background-color", "#fafafa")
-                .set("border", "1px dashed #ddd")
+                .set("background-color", "var(--lumo-contrast-5pct)")
+                .set("border", "1px dashed var(--lumo-contrast-20pct)")
                 .set("border-radius", "8px")
                 .set("text-align", "center");
 
         Span titleSpan = new Span(title);
         titleSpan.getStyle()
                 .set("font-weight", "600")
-                .set("color", "#555")
+                .set("color", "var(--lumo-body-text-color)")
                 .set("display", "block");
 
         Span subtitleSpan = new Span(subtitle);
         subtitleSpan.getStyle()
-                .set("color", "#888")
+                .set("color", "var(--lumo-secondary-text-color)")
                 .set("font-size", "0.9em")
                 .set("display", "block");
 
