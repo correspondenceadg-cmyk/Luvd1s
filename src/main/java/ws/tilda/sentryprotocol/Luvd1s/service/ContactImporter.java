@@ -3,6 +3,7 @@ package ws.tilda.sentryprotocol.Luvd1s.service;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ezvcard.Ezvcard;
 import ezvcard.VCard;
+import ezvcard.util.PartialDate;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -101,10 +103,10 @@ public class ContactImporter {
                     p.setJobTitle(card.getTitles().get(0).getValue());
                 }
                 if (card.getBirthday() != null && card.getBirthday().getDate() != null) {
-                    Date date = card.getBirthday().getDate();
-                    p.setBirthday(date.toInstant()
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate());
+                    LocalDate bd = toLocalDate(card.getBirthday().getDate());
+                    if (bd != null) {
+                        p.setBirthday(bd);
+                    }
                 }
 
                 if (p.getFirstName() != null && !p.getFirstName().isBlank()) {
@@ -115,6 +117,31 @@ public class ContactImporter {
             }
         }
         return people;
+    }
+
+    /**
+     * ez-vcard 0.12 returns Temporal from Birthday.getDate(). Concrete types
+     * in practice are LocalDate (fully specified), PartialDate (year only,
+     * or month/day only), or java.util.Date on the legacy path. Anything
+     * else gets dropped rather than guessed at.
+     */
+    private LocalDate toLocalDate(Temporal t) {
+        if (t instanceof LocalDate ld) {
+            return ld;
+        }
+        if (t instanceof PartialDate pd) {
+            try {
+                return pd.toLocalDate();
+            } catch (Exception ex) {
+                return null;
+            }
+        }
+        if (t instanceof Date legacy) {
+            return legacy.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+        }
+        return null;
     }
 
     private List<Person> parseCsv(InputStream input, boolean tabSeparated) throws IOException {
