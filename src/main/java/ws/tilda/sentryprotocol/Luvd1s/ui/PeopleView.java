@@ -5,12 +5,14 @@ import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.SkeletonViews;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
@@ -22,6 +24,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -30,12 +33,20 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
+@Push
 @PermitAll
 @Route("")
 @PageTitle("People")
+@StyleSheet("context://styles/skeleton.css")
 public class PeopleView extends VerticalLayout {
 
     private static final int MAX_VISIBLE_ROWS = 20;
@@ -50,6 +61,8 @@ public class PeopleView extends VerticalLayout {
 
     private final Grid<Person> grid = new Grid<>(Person.class, false);
     private final Binder<Person> binder = new Binder<>(Person.class);
+    private final List<Person> cachedPeople = new ArrayList<>();
+    private final VerticalLayout gridContainer = new VerticalLayout();
 
     private final TextField firstName = new TextField("First name");
     private final TextField lastName = new TextField("Last name");
@@ -87,18 +100,51 @@ public class PeopleView extends VerticalLayout {
         configureGrid();
         configureForm();
 
-        filterTag.setItems(tagService.findAll());
         filterTag.setItemLabelGenerator(Tag::getName);
         filterTag.setClearButtonVisible(true);
         filterTag.setWidthFull();
-        filterTag.addValueChangeListener(e -> refresh());
+        filterTag.addValueChangeListener(e -> applyFilter());
 
-        grid.setWidthFull();
+        gridContainer.setPadding(false);
+        gridContainer.setSpacing(false);
+        gridContainer.setWidthFull();
+        gridContainer.add(SkeletonViews.grid(8));
 
-        add(filterTag, grid, new H3("Edit person"), buildFormPanel());
+        add(filterTag, gridContainer, new H3("Edit person"), buildFormPanel());
 
-        refresh();
         edit(null);
+        loadAsync();
+    }
+
+    private void loadAsync() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UI ui = UI.getCurrent();
+
+        CompletableFuture.runAsync(() -> {
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                List<Person> people = personService.findAll();
+                List<Tag> tags = tagService.findAll();
+
+                ui.access(() -> {
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    try {
+                        cachedPeople.clear();
+                        cachedPeople.addAll(people);
+
+                        filterTag.setItems(tags);
+
+                        gridContainer.removeAll();
+                        gridContainer.add(grid);
+                        applyFilter();
+                    } finally {
+                        SecurityContextHolder.clearContext();
+                    }
+                });
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        });
     }
 
     private HorizontalLayout buildHeader() {
@@ -138,12 +184,13 @@ public class PeopleView extends VerticalLayout {
 
         grid.addComponentColumn(person -> {
             Button log = new Button(VaadinIcon.BOLT.create(), e ->
-                    new InteractionDialog(interactionService, person, this::refresh).open());
+                    new InteractionDialog(interactionService, person, this::onInteractionSaved).open());
             log.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
             return log;
         }).setHeader("Log").setAutoWidth(true).setFlexGrow(0);
 
         grid.asSingleSelect().addValueChangeListener(e -> edit(e.getValue()));
+        grid.setWidthFull();
     }
 
     private HorizontalLayout tagChips(Person person) {
@@ -177,7 +224,6 @@ public class PeopleView extends VerticalLayout {
         binder.forField(birthday).bind(Person::getBirthday, Person::setBirthday);
         binder.forField(notes).bind(Person::getNotes, Person::setNotes);
 
-        tagsField.setItems(tagService.findAll());
         tagsField.setItemLabelGenerator(Tag::getName);
         binder.forField(tagsField).bind(Person::getTags, Person::setTags);
 
@@ -187,7 +233,7 @@ public class PeopleView extends VerticalLayout {
         newPerson.addClickListener(e -> edit(null));
         logInteraction.addClickListener(e -> {
             if (current != null && current.getId() != null) {
-                new InteractionDialog(interactionService, current, this::refresh).open();
+                new InteractionDialog(interactionService, current, this::onInteractionSaved).open();
             } else {
                 Notification.show("Select a person first");
             }
@@ -209,19 +255,20 @@ public class PeopleView extends VerticalLayout {
         return panel;
     }
 
-    private void refresh() {
-        List<Person> all = personService.findAll();
+    private void applyFilter() {
         Tag selected = filterTag.getValue();
-        if (selected != null) {
-            all = all.stream()
-                    .filter(p -> p.getTags().contains(selected))
-                    .toList();
-        }
-        grid.setItems(all);
-        updateGridHeight(all.size());
+        List<Person> visible = selected == null
+                ? cachedPeople
+                : cachedPeople.stream().filter(p -> p.getTags().contains(selected)).toList();
+        grid.setItems(visible);
+        updateGridHeight(visible.size());
         if (current != null && current.getId() != null) {
             grid.select(current);
         }
+    }
+
+    private void onInteractionSaved() {
+        applyFilter();
     }
 
     private void updateGridHeight(int rowCount) {
@@ -250,18 +297,38 @@ public class PeopleView extends VerticalLayout {
     }
 
     private void savePerson() {
-        if (binder.validate().isOk()) {
-            personService.save(current);
-            refresh();
-            Notification.show("Saved");
+        if (!binder.validate().isOk()) return;
+
+        Person saved = personService.save(current);
+
+        int idx = -1;
+        for (int i = 0; i < cachedPeople.size(); i++) {
+            if (Objects.equals(cachedPeople.get(i).getId(), saved.getId())) {
+                idx = i;
+                break;
+            }
         }
+
+        if (idx >= 0) {
+            cachedPeople.set(idx, saved);
+        } else {
+            cachedPeople.add(saved);
+            cachedPeople.sort(Comparator
+                    .comparing(Person::getLastName, Comparator.nullsLast(String::compareToIgnoreCase))
+                    .thenComparing(Person::getFirstName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        }
+
+        applyFilter();
+        Notification.show("Saved");
     }
 
     private void deletePerson() {
         if (current == null || current.getId() == null) return;
+
         personService.delete(current);
+        cachedPeople.removeIf(p -> Objects.equals(p.getId(), current.getId()));
         edit(null);
-        refresh();
+        applyFilter();
         Notification.show("Deleted");
     }
 }
