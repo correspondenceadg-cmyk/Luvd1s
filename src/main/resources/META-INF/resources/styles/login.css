@@ -1,0 +1,15 @@
+@font-face {
+    font-family: 'Hogan Brush';
+    src: url('/fonts/hoganbrush.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+.login-title {
+    font-family: 'Hogan Brush', cursive;
+    font-size: 3.5em;
+    font-weight: normal;
+    margin: 0 0 1em 0;
+    line-height: 1.1;
+}
