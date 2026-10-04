@@ -44,7 +44,7 @@ public class BarChart extends Div {
 
         int gridCount = 4;
 
-        // Horizontal gridlines
+        // Gridlines
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             Element line = new Element("line");
@@ -57,12 +57,14 @@ public class BarChart extends Div {
             svg.appendChild(line);
         }
 
-        // Y-axis labels — double math so labels are distinct
+        // Y-axis labels — fractional when needed, whole numbers when clean
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             double raw = maxY - ((double) maxY * i) / gridCount;
-            long value = Math.round(raw);
-            if (value < 0) value = 0;
+            if (raw < 0) raw = 0;
+            String label = (raw == Math.floor(raw))
+                    ? String.valueOf((long) raw)
+                    : String.format("%.1f", raw);
 
             Element text = new Element("text");
             text.setAttribute("x", String.valueOf(PAD_L - 8));
@@ -70,7 +72,7 @@ public class BarChart extends Div {
             text.setAttribute("text-anchor", "end");
             text.setAttribute("font-size", "12");
             text.setAttribute("fill", "var(--lumo-secondary-text-color)");
-            text.setText(String.valueOf(value));
+            text.setText(label);
             svg.appendChild(text);
         }
 
