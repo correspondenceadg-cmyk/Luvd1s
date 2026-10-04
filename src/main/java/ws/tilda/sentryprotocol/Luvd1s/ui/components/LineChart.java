@@ -11,26 +11,29 @@ import java.util.Map;
 
 public class LineChart extends Div {
 
-    private static final int WIDTH = 700;
+    private static final int WIDTH = 350;
     private static final int HEIGHT = 280;
-    private static final int PAD_L = 50;
-    private static final int PAD_R = 20;
-    private static final int PAD_T = 25;
-    private static final int PAD_B = 55;
+    private static final int PAD_L = 42;
+    private static final int PAD_R = 12;
+    private static final int PAD_T = 18;
+    private static final int PAD_B = 42;
 
     public LineChart(Map<LocalDate, Long> data, String accentColor) {
         setWidthFull();
-        getStyle().set("max-width", WIDTH + "px");
-        getStyle().set("aspect-ratio", WIDTH + " / " + HEIGHT);
+        getStyle().set("max-width", "400px");
+        getStyle().set("height", HEIGHT + "px");
+        getStyle().set("min-height", HEIGHT + "px");
         getStyle().set("position", "relative");
-        getStyle().set("overflow", "visible");
+        getStyle().set("flex-shrink", "0");
+        getStyle().set("overflow", "hidden");
 
         if (data.isEmpty()) {
             setText("No data to show yet.");
             getStyle().set("color", "var(--lumo-secondary-text-color)");
             getStyle().set("font-style", "italic");
             getStyle().set("padding", "16px 0");
-            getStyle().set("aspect-ratio", "unset");
+            getStyle().set("height", "auto");
+            getStyle().set("min-height", "auto");
             return;
         }
 
@@ -71,10 +74,10 @@ public class LineChart extends Div {
                     : String.format("%.1f", raw);
 
             Element text = new Element("text");
-            text.setAttribute("x", String.valueOf(PAD_L - 8));
+            text.setAttribute("x", String.valueOf(PAD_L - 6));
             text.setAttribute("y", String.valueOf(y + 4));
             text.setAttribute("text-anchor", "end");
-            text.setAttribute("font-size", "12");
+            text.setAttribute("font-size", "11");
             text.setAttribute("fill", "var(--lumo-secondary-text-color)");
             text.setText(label);
             svg.appendChild(text);
@@ -132,15 +135,15 @@ public class LineChart extends Div {
             svg.appendChild(dot);
         }
 
-        int labelStep = Math.max(1, (n + 5) / 6);
+        int labelStep = Math.max(1, (n + 4) / 5);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM d");
         for (int i = 0; i < n; i += labelStep) {
             int x = PAD_L + (n <= 1 ? chartW / 2 : (i * chartW) / (n - 1));
             Element text = new Element("text");
             text.setAttribute("x", String.valueOf(x));
-            text.setAttribute("y", String.valueOf(baseY + 20));
+            text.setAttribute("y", String.valueOf(baseY + 16));
             text.setAttribute("text-anchor", "middle");
-            text.setAttribute("font-size", "12");
+            text.setAttribute("font-size", "11");
             text.setAttribute("fill", "var(--lumo-secondary-text-color)");
             text.setText(entries.get(i).getKey().format(fmt));
             svg.appendChild(text);
