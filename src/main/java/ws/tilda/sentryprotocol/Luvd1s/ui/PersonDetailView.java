@@ -26,6 +26,7 @@ import com.vaadin.flow.router.Route;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@PermitAll
 @Route("person")
 @PageTitle("Person")
 public class PersonDetailView extends VerticalLayout implements HasUrlParameter<Long> {
