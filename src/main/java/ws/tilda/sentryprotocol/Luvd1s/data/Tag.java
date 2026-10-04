@@ -3,16 +3,22 @@ package ws.tilda.sentryprotocol.Luvd1s.data;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
+@Table(
+    uniqueConstraints = @UniqueConstraint(columnNames = {"owner_id", "name"})
+)
 public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(optional = false)
+    private User owner;
+
     @NotBlank
-    @Column(unique = true)
     private String name;
 
     private String color;
@@ -22,6 +28,9 @@ public class Tag {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public User getOwner() { return owner; }
+    public void setOwner(User owner) { this.owner = owner; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -37,11 +46,11 @@ public class Tag {
         if (this == o) return true;
         if (!(o instanceof Tag)) return false;
         Tag tag = (Tag) o;
-        return name != null && name.equals(tag.name);
+        return id != null && id.equals(tag.id);
     }
 
     @Override
     public int hashCode() {
-        return name != null ? name.hashCode() : 0;
+        return Objects.hash(id);
     }
 }
