@@ -30,7 +30,7 @@ public class AiService {
 
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout((int) Duration.ofSeconds(3).toMillis());
-        factory.setReadTimeout((int) Duration.ofSeconds(10).toMillis());
+        factory.setReadTimeout((int) Duration.ofSeconds(20).toMillis());
 
         this.client = RestClient.builder()
                 .baseUrl("https://api.groq.com/openai/v1")
@@ -43,27 +43,20 @@ public class AiService {
     }
 
     /**
-     * Summarize a CRM interaction note into one short sentence.
-     * Returns empty if AI is not configured, input is blank, or the call fails.
+     * Generic chat completion. Messages are expected to already be scrubbed
+     * of PII by the caller. This method does not enforce that — the
+     * AiChatService is the only intended caller.
      */
-    public Optional<String> summarize(String text) {
+    public Optional<String> chat(List<Map<String, String>> messages) {
         if (!isConfigured()) return Optional.empty();
-        if (text == null || text.isBlank()) return Optional.empty();
+        if (messages == null || messages.isEmpty()) return Optional.empty();
 
         try {
             Map<String, Object> request = Map.of(
                     "model", model,
-                    "messages", List.of(
-                            Map.of(
-                                    "role", "system",
-                                    "content", "Summarize the CRM interaction note in one short " +
-                                            "sentence under 20 words. Do not include preamble. " +
-                                            "Output only the summary."
-                            ),
-                            Map.of("role", "user", "content", text)
-                    ),
-                    "max_tokens", 80,
-                    "temperature", 0.3
+                    "messages", messages,
+                    "max_tokens", 500,
+                    "temperature", 0.4
             );
 
             JsonNode response = client.post()
@@ -84,7 +77,7 @@ public class AiService {
 
             return Optional.of(content.trim());
         } catch (Exception ex) {
-            log.warn("AI summarization failed: {}", ex.getMessage());
+            log.warn("AI chat call failed: {}", ex.getMessage());
             return Optional.empty();
         }
     }
