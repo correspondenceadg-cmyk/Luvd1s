@@ -12,6 +12,7 @@ import com.vaadin.flow.theme.lumo.Lumo;
 @Push(PushMode.AUTOMATIC)
 @StyleSheet("context://styles/skeleton.css")
 @StyleSheet("context://styles/ai-chat.css")
+@StyleSheet("context://styles/micro.css")
 @Theme(themeClass = Lumo.class)
 public class AppShell implements AppShellConfigurator {
 
