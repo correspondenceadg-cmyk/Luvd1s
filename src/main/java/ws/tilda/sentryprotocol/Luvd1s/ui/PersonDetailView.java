@@ -2,9 +2,11 @@ package ws.tilda.sentryprotocol.Luvd1s.ui;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
+import ws.tilda.sentryprotocol.Luvd1s.service.AiChatService;
 import ws.tilda.sentryprotocol.Luvd1s.service.AnalyticsService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.AiChatPanel;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.BarChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.LineChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
@@ -13,7 +15,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -46,6 +47,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
     private final InteractionService interactionService;
     private final AnalyticsService analyticsService;
     private final AuthenticationContext authContext;
+    private final AiChatService aiChatService;
 
     private final VerticalLayout header = new VerticalLayout();
     private final VerticalLayout analyticsBlock = new VerticalLayout();
@@ -56,11 +58,13 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
     public PersonDetailView(PersonService personService,
                             InteractionService interactionService,
                             AnalyticsService analyticsService,
-                            AuthenticationContext authContext) {
+                            AuthenticationContext authContext,
+                            AiChatService aiChatService) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.analyticsService = analyticsService;
         this.authContext = authContext;
+        this.aiChatService = aiChatService;
 
         setPadding(false);
         setSpacing(true);
@@ -68,6 +72,8 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         getStyle().set("box-sizing", "border-box");
         getStyle().set("overflow-x", "hidden");
         setWidthFull();
+
+        add(new AiChatPanel(aiChatService));
     }
 
     @Override
@@ -79,6 +85,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
                 },
                 () -> {
                     removeAll();
+                    add(new AiChatPanel(aiChatService));
                     Button back = new Button("Back", VaadinIcon.ARROW_LEFT.create(),
                             e -> UI.getCurrent().navigate(PeopleView.class));
                     back.setAriaLabel("Back to people list");
@@ -89,6 +96,8 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
 
     private void render() {
         removeAll();
+
+        add(new AiChatPanel(aiChatService));
 
         Button back = new Button("Back", VaadinIcon.ARROW_LEFT.create(),
                 e -> UI.getCurrent().navigate(PeopleView.class));
@@ -251,31 +260,14 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         card.add(cardHeader);
 
         if (interaction.getAiSummary() != null && !interaction.getAiSummary().isBlank()) {
-            Div aiBlock = new Div();
-            aiBlock.getStyle()
-                    .set("margin-top", "10px")
-                    .set("padding", "10px 12px")
-                    .set("background-color", "var(--lumo-primary-color-10pct)")
-                    .set("border-left", "3px solid var(--lumo-primary-color)")
-                    .set("border-radius", "4px");
-
-            Span aiLabel = new Span("AI SUMMARY");
-            aiLabel.getStyle()
-                    .set("display", "block")
-                    .set("font-size", "0.65em")
-                    .set("font-weight", "700")
-                    .set("letter-spacing", "1px")
-                    .set("color", "var(--lumo-primary-text-color)")
-                    .set("margin-bottom", "4px");
-
             Span aiText = new Span(interaction.getAiSummary());
             aiText.getStyle()
+                    .set("margin-top", "8px")
                     .set("display", "block")
-                    .set("font-size", "0.95em")
-                    .set("line-height", "1.4");
-
-            aiBlock.add(aiLabel, aiText);
-            card.add(aiBlock);
+                    .set("font-size", "0.9em")
+                    .set("color", "var(--lumo-primary-text-color)")
+                    .set("font-style", "italic");
+            card.add(aiText);
         }
 
         if (interaction.getSummary() != null && !interaction.getSummary().isBlank()) {
