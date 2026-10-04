@@ -174,7 +174,7 @@ debugButton.setAriaLabel("Open debug dashboard");
         logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         logoutButton.setAriaLabel("Log out of your account");
 
-        HorizontalLayout buttons = new HorizontalLayout(dashboardButton, themeToggle, logoutButton);
+        HorizontalLayout buttons = new HorizontalLayout(dashboardButton, debugButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
         buttons.setAlignItems(Alignment.CENTER);
         buttons.getStyle().set("flex-wrap", "wrap");
