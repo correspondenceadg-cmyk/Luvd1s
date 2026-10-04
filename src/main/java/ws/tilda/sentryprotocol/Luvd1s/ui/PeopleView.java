@@ -1,7 +1,5 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
-import jakarta.annotation.security.PermitAll;
-
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
@@ -30,6 +28,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.security.AuthenticationContext;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 
@@ -46,6 +46,7 @@ public class PeopleView extends VerticalLayout {
     private final PersonService personService;
     private final InteractionService interactionService;
     private final TagService tagService;
+    private final AuthenticationContext authContext;
 
     private final Grid<Person> grid = new Grid<>(Person.class, false);
     private final Binder<Person> binder = new Binder<>(Person.class);
@@ -71,24 +72,17 @@ public class PeopleView extends VerticalLayout {
 
     public PeopleView(PersonService personService,
                       InteractionService interactionService,
-                      TagService tagService) {
+                      TagService tagService,
+                      AuthenticationContext authContext) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.tagService = tagService;
+        this.authContext = authContext;
 
         setPadding(true);
         setSpacing(true);
 
-        H2 title = new H2("People");
-        Button dashboardButton = new Button("Dashboard", VaadinIcon.CHART.create(),
-                e -> UI.getCurrent().navigate(DashboardView.class));
-        dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        HorizontalLayout header = new HorizontalLayout(title, dashboardButton);
-        header.setWidthFull();
-        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        header.setAlignItems(Alignment.CENTER);
-        add(header);
+        add(buildHeader());
 
         configureGrid();
         configureForm();
@@ -105,6 +99,26 @@ public class PeopleView extends VerticalLayout {
 
         refresh();
         edit(null);
+    }
+
+    private HorizontalLayout buildHeader() {
+        H2 title = new H2("People");
+
+        Button dashboardButton = new Button("Dashboard", VaadinIcon.CHART.create(),
+                e -> UI.getCurrent().navigate(DashboardView.class));
+        dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        Button logoutButton = new Button("Log out", e -> authContext.logout());
+        logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+        HorizontalLayout buttons = new HorizontalLayout(dashboardButton, logoutButton);
+        buttons.setSpacing(true);
+
+        HorizontalLayout header = new HorizontalLayout(title, buttons);
+        header.setWidthFull();
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.setAlignItems(Alignment.CENTER);
+        return header;
     }
 
     private void configureGrid() {
