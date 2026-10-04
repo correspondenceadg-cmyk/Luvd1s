@@ -25,6 +25,7 @@ public class DebugService {
     private final AuditLogRepository auditLogs;
     private final RecentRequestsBuffer requestBuffer;
     private final ObservabilityService observability;
+    private final AiService aiService;
 
     public DebugService(PersonRepository people,
                         InteractionRepository interactions,
@@ -32,7 +33,8 @@ public class DebugService {
                         UserRepository users,
                         AuditLogRepository auditLogs,
                         RecentRequestsBuffer requestBuffer,
-                        ObservabilityService observability) {
+                        ObservabilityService observability,
+                        AiService aiService) {
         this.people = people;
         this.interactions = interactions;
         this.tags = tags;
@@ -40,6 +42,7 @@ public class DebugService {
         this.auditLogs = auditLogs;
         this.requestBuffer = requestBuffer;
         this.observability = observability;
+        this.aiService = aiService;
     }
 
     public Map<String, String> jvmStats() {
@@ -79,6 +82,12 @@ public class DebugService {
         stats.put("osArch", System.getProperty("os.arch"));
         stats.put("timezone", System.getProperty("user.timezone"));
         stats.put("locale", System.getProperty("user.language") + "-" + System.getProperty("user.country"));
+        return stats;
+    }
+
+    public Map<String, String> aiStats() {
+        Map<String, String> stats = new LinkedHashMap<>();
+        stats.put("configured", aiService.isConfigured() ? "yes" : "no");
         return stats;
     }
 
