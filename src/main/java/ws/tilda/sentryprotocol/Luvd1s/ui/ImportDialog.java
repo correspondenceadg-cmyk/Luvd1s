@@ -12,7 +12,6 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.upload.MultiFileMemoryBuffer;
 import com.vaadin.flow.component.upload.Upload;
 
 import java.io.InputStream;
@@ -43,15 +42,8 @@ public class ImportDialog extends Dialog {
         setHeight("640px");
         setMaxHeight("85vh");
 
-        MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
-        Upload upload = new Upload(buffer);
-        upload.setAcceptedFileTypes(".csv", ".tsv", ".vcf", ".vcard");
-        upload.setMaxFiles(1);
-        upload.setDropLabel(new Span("Drop a .csv, .tsv, or .vcf file"));
-        upload.setWidthFull();
-
-        upload.addSucceededListener(event -> {
-            try (InputStream in = buffer.getInputStream(event.getFileName())) {
+        Upload upload = new Upload(event -> {
+            try (InputStream in = event.getInputStream()) {
                 List<Person> list = importer.parse(event.getFileName(), in);
                 parsed.clear();
                 parsed.addAll(list);
@@ -64,6 +56,10 @@ public class ImportDialog extends Dialog {
                 commit.setEnabled(false);
             }
         });
+        upload.setAcceptedFileTypes(".csv", ".tsv", ".vcf", ".vcard");
+        upload.setMaxFiles(1);
+        upload.setDropLabel(new Span("Drop a .csv, .tsv, or .vcf file"));
+        upload.setWidthFull();
 
         configurePreview();
 
