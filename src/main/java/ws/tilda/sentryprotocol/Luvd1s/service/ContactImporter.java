@@ -3,6 +3,7 @@ package ws.tilda.sentryprotocol.Luvd1s.service;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ezvcard.Ezvcard;
 import ezvcard.VCard;
+import ezvcard.property.Birthday;
 import ezvcard.util.PartialDate;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -18,12 +19,13 @@ import java.io.InputStreamReader;
 import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -102,8 +104,8 @@ public class ContactImporter {
                 if (card.getTitles() != null && !card.getTitles().isEmpty()) {
                     p.setJobTitle(card.getTitles().get(0).getValue());
                 }
-                if (card.getBirthday() != null && card.getBirthday().getDate() != null) {
-                    LocalDate bd = toLocalDate(card.getBirthday().getDate());
+                if (card.getBirthday() != null) {
+                    LocalDate bd = extractBirthday(card.getBirthday());
                     if (bd != null) {
                         p.setBirthday(bd);
                     }
@@ -120,26 +122,27 @@ public class ContactImporter {
     }
 
     /**
-     * ez-vcard 0.12 returns Temporal from Birthday.getDate(). Concrete types
-     * in practice are LocalDate (fully specified), PartialDate (year only,
-     * or month/day only), or java.util.Date on the legacy path. Anything
-     * else gets dropped rather than guessed at.
+     * Birthday.getDate() returns a Temporal that can be any of LocalDate,
+     * LocalDateTime, OffsetDateTime, or ZonedDateTime depending on what the
+     * vCard contained. Partial dates come through a separate getPartialDate()
+     * call and carry nullable year/month/date components.
      */
-    private LocalDate toLocalDate(Temporal t) {
-        if (t instanceof LocalDate ld) {
-            return ld;
+    private LocalDate extractBirthday(Birthday bday) {
+        Temporal t = bday.getDate();
+        if (t != null) {
+            if (t instanceof LocalDate ld) return ld;
+            if (t instanceof LocalDateTime ldt) return ldt.toLocalDate();
+            if (t instanceof OffsetDateTime odt) return odt.toLocalDate();
+            if (t instanceof ZonedDateTime zdt) return zdt.toLocalDate();
         }
-        if (t instanceof PartialDate pd) {
+
+        PartialDate pd = bday.getPartialDate();
+        if (pd != null && pd.getYear() != null && pd.getMonth() != null && pd.getDate() != null) {
             try {
-                return pd.toLocalDate();
-            } catch (Exception ex) {
+                return LocalDate.of(pd.getYear(), pd.getMonth(), pd.getDate());
+            } catch (Exception ignored) {
                 return null;
             }
-        }
-        if (t instanceof Date legacy) {
-            return legacy.toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
         }
         return null;
     }
