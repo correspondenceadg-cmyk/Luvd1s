@@ -6,7 +6,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
 
-@SuppressWarnings("removal")
+@SuppressWarnings({"removal", "deprecation"})
 public class ThemeToggle extends Button {
 
     private static final String TOGGLE_JS =
