@@ -93,8 +93,11 @@ public class PeopleView extends VerticalLayout {
         this.tagService = tagService;
         this.authContext = authContext;
 
-        setPadding(true);
+        setPadding(false);
         setSpacing(true);
+        getStyle().set("padding", "12px");
+        getStyle().set("box-sizing", "border-box");
+        setWidthFull();
 
         add(buildHeader());
 
@@ -151,6 +154,7 @@ public class PeopleView extends VerticalLayout {
 
     private HorizontalLayout buildHeader() {
         H2 title = new H2("People");
+        title.getStyle().set("margin", "0");
 
         Button dashboardButton = new Button("Dashboard", VaadinIcon.CHART.create(),
                 e -> UI.getCurrent().navigate(DashboardView.class));
@@ -166,11 +170,15 @@ public class PeopleView extends VerticalLayout {
         HorizontalLayout buttons = new HorizontalLayout(dashboardButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
         buttons.setAlignItems(Alignment.CENTER);
+        buttons.getStyle().set("flex-wrap", "wrap");
+        buttons.getStyle().set("gap", "4px");
 
         HorizontalLayout header = new HorizontalLayout(title, buttons);
         header.setWidthFull();
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
         header.setAlignItems(Alignment.CENTER);
+        header.getStyle().set("flex-wrap", "wrap");
+        header.getStyle().set("gap", "8px");
         return header;
     }
 
@@ -270,7 +278,7 @@ public class PeopleView extends VerticalLayout {
         logInteraction.setAriaLabel("Log interaction with the currently edited person");
     }
 
-    @SuppressWarnings({"rawtypes"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void trackDirty(HasValue field) {
         field.addValueChangeListener(event -> {
             if (event.isFromClient()) {
@@ -294,6 +302,7 @@ public class PeopleView extends VerticalLayout {
 
         HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, newPerson);
         actions.getStyle().set("flex-wrap", "wrap");
+        actions.getStyle().set("gap", "4px");
 
         VerticalLayout panel = new VerticalLayout(form, actions, logInteraction);
         panel.setPadding(false);
