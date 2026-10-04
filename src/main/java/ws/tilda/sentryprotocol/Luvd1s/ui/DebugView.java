@@ -1,6 +1,8 @@
 package ws.tilda.sentryprotocol.Luvd1s.ui;
 
+import ws.tilda.sentryprotocol.Luvd1s.data.AuditLog;
 import ws.tilda.sentryprotocol.Luvd1s.service.DebugService;
+import ws.tilda.sentryprotocol.Luvd1s.service.RequestRecord;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -18,15 +20,23 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
-@PermitAll
+@RolesAllowed("ADMIN")
 @Route("debug")
 @PageTitle("Debug")
 @StyleSheet("context://styles/debug.css")
 public class DebugView extends VerticalLayout {
+
+    private static final DateTimeFormatter TIME_FMT =
+            DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
     private final DebugService debugService;
     private final AuthenticationContext authContext;
@@ -44,6 +54,8 @@ public class DebugView extends VerticalLayout {
         setWidthFull();
 
         add(buildHeader());
+        add(buildRecentRequestsCard());
+        add(buildAuditCard());
         add(buildJvmCard());
         add(buildDatabaseCard());
         add(buildSystemCard());
@@ -121,6 +133,183 @@ public class DebugView extends VerticalLayout {
 
     private String capitalize(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    private Div buildRecentRequestsCard() {
+        Div card = new Div();
+        card.addClassName("debug-card");
+        card.setWidthFull();
+
+        H3 heading = new H3("Recent requests");
+        heading.getStyle().set("margin", "0 0 12px 0");
+        card.add(heading);
+
+        List<RequestRecord> records = debugService.recentRequests();
+        if (records.isEmpty()) {
+            card.add(emptyHint("No requests captured yet."));
+            return card;
+        }
+
+        for (RequestRecord r : records) {
+            card.add(requestRow(r));
+        }
+        return card;
+    }
+
+    private HorizontalLayout requestRow(RequestRecord r) {
+        Span time = mono(timeAgo(r.timestamp()), "60px");
+        Span method = badge(r.method(), methodColor(r.method()), "70px");
+        Span path = mono(truncate(r.path(), 34), null);
+        path.getStyle().set("flex", "1");
+        path.getStyle().set("min-width", "0");
+        Span user = mono(r.username() != null ? r.username() : "—", "80px");
+        Span status = badge(String.valueOf(r.status()), statusColor(r.status()), "50px");
+        Span duration = mono(r.durationMs() + "ms", "65px");
+        duration.getStyle().set("text-align", "right");
+
+        HorizontalLayout row = new HorizontalLayout(time, method, path, user, status, duration);
+        row.setWidthFull();
+        row.setAlignItems(Alignment.CENTER);
+        row.setSpacing(true);
+        row.getStyle().set("padding", "6px 0");
+        row.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
+        row.getStyle().set("flex-wrap", "wrap");
+        row.getStyle().set("gap", "8px");
+        return row;
+    }
+
+    private Div buildAuditCard() {
+        Div card = new Div();
+        card.addClassName("debug-card");
+        card.setWidthFull();
+
+        H3 heading = new H3("Audit trail");
+        heading.getStyle().set("margin", "0 0 12px 0");
+        card.add(heading);
+
+        List<AuditLog> entries = debugService.recentAudits();
+        if (entries.isEmpty()) {
+            card.add(emptyHint("No auditable actions recorded yet."));
+            return card;
+        }
+
+        for (AuditLog a : entries) {
+            card.add(auditRow(a));
+        }
+        return card;
+    }
+
+    private HorizontalLayout auditRow(AuditLog a) {
+        Span time = mono(timeAgo(a.getCreatedAt()), "60px");
+        Span user = mono(a.getUsername() != null ? a.getUsername() : "—", "80px");
+        Span action = badge(a.getAction(), actionColor(a.getAction()), null);
+        Span target = mono(
+                a.getTargetType() != null
+                        ? a.getTargetType() + (a.getTargetId() != null ? " #" + a.getTargetId() : "")
+                        : "—",
+                "130px"
+        );
+        Span details = new Span(a.getDetails() != null ? a.getDetails() : "");
+        details.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "0.85em")
+                .set("flex", "1")
+                .set("min-width", "0");
+
+        HorizontalLayout row = new HorizontalLayout(time, user, action, target, details);
+        row.setWidthFull();
+        row.setAlignItems(Alignment.CENTER);
+        row.setSpacing(true);
+        row.getStyle().set("padding", "6px 0");
+        row.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
+        row.getStyle().set("flex-wrap", "wrap");
+        row.getStyle().set("gap", "8px");
+        return row;
+    }
+
+    private Span mono(String text, String width) {
+        Span span = new Span(text);
+        span.getStyle()
+                .set("font-family", "ui-monospace, SFMono-Regular, monospace")
+                .set("font-size", "0.85em")
+                .set("color", "var(--lumo-body-text-color)")
+                .set("white-space", "nowrap")
+                .set("overflow", "hidden")
+                .set("text-overflow", "ellipsis");
+        if (width != null) {
+            span.getStyle().set("width", width);
+            span.getStyle().set("flex-shrink", "0");
+        }
+        return span;
+    }
+
+    private Span badge(String text, String color, String width) {
+        Span span = new Span(text);
+        span.getStyle()
+                .set("background-color", color)
+                .set("color", "white")
+                .set("padding", "1px 8px")
+                .set("border-radius", "10px")
+                .set("font-size", "0.7em")
+                .set("font-weight", "600")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.3px")
+                .set("text-align", "center");
+        if (width != null) {
+            span.getStyle().set("width", width);
+            span.getStyle().set("flex-shrink", "0");
+            span.getStyle().set("box-sizing", "border-box");
+        }
+        return span;
+    }
+
+    private String methodColor(String method) {
+        return switch (method) {
+            case "GET" -> "#2196F3";
+            case "POST" -> "#4CAF50";
+            case "PUT" -> "#FF9800";
+            case "DELETE" -> "#F44336";
+            default -> "#666";
+        };
+    }
+
+    private String statusColor(int status) {
+        if (status >= 500) return "#F44336";
+        if (status >= 400) return "#FF9800";
+        if (status >= 300) return "#9C27B0";
+        return "#4CAF50";
+    }
+
+    private String actionColor(String action) {
+        if (action == null) return "#666";
+        if (action.endsWith("_CREATE")) return "#4CAF50";
+        if (action.endsWith("_UPDATE")) return "#FF9800";
+        if (action.endsWith("_DELETE")) return "#F44336";
+        return "#2196F3";
+    }
+
+    private String timeAgo(Instant instant) {
+        if (instant == null) return "—";
+        long seconds = Duration.between(instant, Instant.now()).getSeconds();
+        if (seconds < 60) return seconds + "s";
+        if (seconds < 3600) return (seconds / 60) + "m";
+        if (seconds < 86400) return (seconds / 3600) + "h";
+        return TIME_FMT.format(instant);
+    }
+
+    private String truncate(String s, int max) {
+        if (s == null) return "";
+        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
+    }
+
+    private Div emptyHint(String text) {
+        Div hint = new Div();
+        hint.setText(text);
+        hint.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-style", "italic")
+                .set("padding", "8px 0");
+        return hint;
     }
 
     private Div buildJvmCard() {
