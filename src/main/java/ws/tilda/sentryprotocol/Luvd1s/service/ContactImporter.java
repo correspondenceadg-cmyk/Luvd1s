@@ -1,8 +1,8 @@
 package ws.tilda.sentryprotocol.Luvd1s.service;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
-import com.googlecode.ez.vcard.Ezvcard;
-import com.googlecode.ez.vcard.VCard;
+import ezvcard.Ezvcard;
+import ezvcard.VCard;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -17,9 +17,11 @@ import java.io.InputStreamReader;
 import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -99,11 +101,10 @@ public class ContactImporter {
                     p.setJobTitle(card.getTitles().get(0).getValue());
                 }
                 if (card.getBirthday() != null && card.getBirthday().getDate() != null) {
-                    p.setBirthday(LocalDate.of(
-                            card.getBirthday().getDate().getYear() + 1900,
-                            card.getBirthday().getDate().getMonth() + 1,
-                            card.getBirthday().getDate().getDate()
-                    ));
+                    Date date = card.getBirthday().getDate();
+                    p.setBirthday(date.toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate());
                 }
 
                 if (p.getFirstName() != null && !p.getFirstName().isBlank()) {
