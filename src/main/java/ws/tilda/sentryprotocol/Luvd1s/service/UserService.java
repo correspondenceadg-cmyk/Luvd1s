@@ -2,6 +2,7 @@ package ws.tilda.sentryprotocol.Luvd1s.service;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.User;
 import ws.tilda.sentryprotocol.Luvd1s.repository.UserRepository;
+import ws.tilda.sentryprotocol.Luvd1s.security.UsernameValidator;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,8 +26,15 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = users.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        String normalized;
+        try {
+            normalized = UsernameValidator.normalize(username);
+        } catch (IllegalArgumentException ex) {
+            throw new UsernameNotFoundException("User not found");
+        }
+
+        User user = users.findByUsername(normalized)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
@@ -36,18 +44,21 @@ public class UserService implements UserDetailsService {
     }
 
     public User register(String username, String rawPassword, String displayName) {
-        if (users.findByUsername(username).isPresent()) {
+        String normalized = UsernameValidator.normalize(username);
+
+        if (users.findByUsername(normalized).isPresent()) {
             throw new IllegalArgumentException("Username already taken");
         }
+
         User user = new User();
-        user.setUsername(username);
+        user.setUsername(normalized);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setDisplayName(displayName);
         return users.save(user);
     }
 
     public Optional<User> findByUsername(String username) {
-        return users.findByUsername(username);
+        return users.findByUsername(UsernameValidator.normalize(username));
     }
 
     public User getCurrentUser() {
@@ -59,6 +70,10 @@ public class UserService implements UserDetailsService {
         if (username == null || "anonymousUser".equals(username)) {
             return null;
         }
-        return users.findByUsername(username).orElse(null);
+        try {
+            return users.findByUsername(UsernameValidator.normalize(username)).orElse(null);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }
