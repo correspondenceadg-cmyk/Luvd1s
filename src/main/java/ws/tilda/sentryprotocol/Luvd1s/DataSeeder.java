@@ -3,6 +3,7 @@ package ws.tilda.sentryprotocol.Luvd1s;
 import ws.tilda.sentryprotocol.Luvd1s.data.*;
 import ws.tilda.sentryprotocol.Luvd1s.repository.*;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,17 +14,31 @@ public class DataSeeder implements CommandLineRunner {
     private final PersonRepository people;
     private final InteractionRepository interactions;
     private final TagRepository tags;
+    private final UserRepository users;
+    private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(PersonRepository people,
                       InteractionRepository interactions,
-                      TagRepository tags) {
+                      TagRepository tags,
+                      UserRepository users,
+                      PasswordEncoder passwordEncoder) {
         this.people = people;
         this.interactions = interactions;
         this.tags = tags;
+        this.users = users;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) {
+        if (users.count() == 0) {
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setPasswordHash(passwordEncoder.encode("admin123"));
+            admin.setDisplayName("Admin");
+            users.save(admin);
+        }
+
         if (people.count() > 0) return;
 
         Tag friend = tag("friend", "#4CAF50");
