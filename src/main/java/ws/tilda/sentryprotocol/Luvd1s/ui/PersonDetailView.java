@@ -66,6 +66,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
                     removeAll();
                     Button back = new Button("Back", VaadinIcon.ARROW_LEFT.create(),
                             e -> UI.getCurrent().navigate(PeopleView.class));
+                    back.setAriaLabel("Back to people list");
                     add(back, new Span("Person not found"));
                 }
         );
@@ -77,16 +78,19 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         Button back = new Button("Back", VaadinIcon.ARROW_LEFT.create(),
                 e -> UI.getCurrent().navigate(PeopleView.class));
         back.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        back.setAriaLabel("Back to people list");
 
         Button log = new Button("Log interaction", VaadinIcon.BOLT.create());
         log.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         log.addClickListener(e -> new InteractionDialog(
                 interactionService, person, this::render).open());
+        log.setAriaLabel("Log interaction with " + person.getFirstName() + " " + person.getLastName());
 
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logout = new Button("Log out", e -> authContext.logout());
         logout.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        logout.setAriaLabel("Log out of your account");
 
         HorizontalLayout actions = new HorizontalLayout(back, log, themeToggle, logout);
         actions.setWidthFull();
@@ -166,10 +170,12 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         Button edit = new Button(VaadinIcon.EDIT.create(), e ->
                 new InteractionDialog(interactionService, person, this::render, interaction).open());
         edit.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+        edit.setAriaLabel("Edit this interaction");
 
         Button delete = new Button(VaadinIcon.TRASH.create(), e -> confirmDelete(interaction));
         delete.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY,
                 ButtonVariant.LUMO_ERROR);
+        delete.setAriaLabel("Delete this interaction");
 
         HorizontalLayout meta = new HorizontalLayout(typeBadge, when);
         meta.setSpacing(true);
