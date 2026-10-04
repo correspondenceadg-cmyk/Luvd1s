@@ -11,19 +11,22 @@ public class ThemeToggle extends Button {
 
     private static final String TOGGLE_JS =
             "const html = document.documentElement; " +
-            "const isDark = html.getAttribute('theme') === 'dark'; " +
+            "const current = html.getAttribute('theme') || ''; " +
+            "const isDark = current.includes('dark'); " +
             "if (isDark) { " +
-            "  html.removeAttribute('theme'); " +
+            "  const next = current.replace(/\\s*dark\\s*/g, ' ').trim(); " +
+            "  if (next) html.setAttribute('theme', next); " +
+            "  else html.removeAttribute('theme'); " +
             "  localStorage.setItem('luvd1s-theme', 'light'); " +
             "  return false; " +
             "} else { " +
-            "  html.setAttribute('theme', 'dark'); " +
+            "  html.setAttribute('theme', current ? current + ' dark' : 'dark'); " +
             "  localStorage.setItem('luvd1s-theme', 'dark'); " +
             "  return true; " +
             "}";
 
     private static final String READ_JS =
-            "return document.documentElement.getAttribute('theme') === 'dark';";
+            "return (document.documentElement.getAttribute('theme') || '').includes('dark');";
 
     public ThemeToggle() {
         addThemeVariants(ButtonVariant.LUMO_TERTIARY);
