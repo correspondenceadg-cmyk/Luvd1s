@@ -27,6 +27,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.core.Authentication;
@@ -46,7 +47,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @PermitAll
-@Route("dashboard")
+@Route("")
+@RouteAlias("dashboard")
 @PageTitle("Dashboard")
 public class DashboardView extends VerticalLayout {
 
