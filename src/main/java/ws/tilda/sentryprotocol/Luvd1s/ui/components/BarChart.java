@@ -19,14 +19,18 @@ public class BarChart extends Div {
     private static final double MAX_BAR_WIDTH = 90.0;
 
     public BarChart(Map<String, Long> data, String color) {
-        getStyle().set("width", "100%");
+        setWidthFull();
         getStyle().set("max-width", WIDTH + "px");
+        getStyle().set("aspect-ratio", WIDTH + " / " + HEIGHT);
+        getStyle().set("position", "relative");
+        getStyle().set("overflow", "visible");
 
         if (data.isEmpty()) {
             setText("No data to show yet.");
             getStyle().set("color", "var(--lumo-secondary-text-color)");
             getStyle().set("font-style", "italic");
             getStyle().set("padding", "16px 0");
+            getStyle().set("aspect-ratio", "unset");
             return;
         }
 
@@ -34,7 +38,7 @@ public class BarChart extends Div {
         svg.setAttribute("viewBox", "0 0 " + WIDTH + " " + HEIGHT);
         svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
         svg.setAttribute("style",
-                "display:block;width:100%;height:auto;max-width:" + WIDTH + "px;");
+                "position:absolute;top:0;left:0;width:100%;height:100%;display:block;");
 
         int chartW = WIDTH - PAD_L - PAD_R;
         int chartH = HEIGHT - PAD_T - PAD_B;
@@ -44,7 +48,6 @@ public class BarChart extends Div {
 
         int gridCount = 4;
 
-        // Gridlines
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             Element line = new Element("line");
@@ -57,7 +60,6 @@ public class BarChart extends Div {
             svg.appendChild(line);
         }
 
-        // Y-axis labels — fractional when needed, whole numbers when clean
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             double raw = maxY - ((double) maxY * i) / gridCount;
@@ -76,7 +78,6 @@ public class BarChart extends Div {
             svg.appendChild(text);
         }
 
-        // Axes
         Element axisX = new Element("line");
         axisX.setAttribute("x1", String.valueOf(PAD_L));
         axisX.setAttribute("y1", String.valueOf(baseY));
@@ -111,7 +112,7 @@ public class BarChart extends Div {
             bar.setAttribute("x", String.valueOf(x));
             bar.setAttribute("y", String.valueOf(y));
             bar.setAttribute("width", String.valueOf(barW));
-            bar.setAttribute("height", String.valueOf(Math.max(barH, 1)));
+            bar.setAttribute("height", String.valueOf(Math.max(barH, 2)));
             bar.setAttribute("rx", "3");
             bar.setAttribute("fill", color);
             Element title = new Element("title");
