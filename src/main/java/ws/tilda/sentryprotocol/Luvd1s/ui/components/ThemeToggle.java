@@ -27,7 +27,8 @@ public class ThemeToggle extends Button {
     public ThemeToggle() {
         addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         setIcon(VaadinIcon.MOON_O.create());
-        setTooltipText("Toggle dark mode");
+        setAriaLabel("Switch to dark mode");
+        setTooltipText("Switch to dark mode");
         addClickListener(e -> toggle());
     }
 
@@ -38,6 +39,9 @@ public class ThemeToggle extends Button {
 
     private void applyIcon(boolean isDark) {
         setIcon(isDark ? VaadinIcon.SUN_O.create() : VaadinIcon.MOON_O.create());
+        String label = isDark ? "Switch to light mode" : "Switch to dark mode";
+        setAriaLabel(label);
+        setTooltipText(label);
     }
 
     @Override
