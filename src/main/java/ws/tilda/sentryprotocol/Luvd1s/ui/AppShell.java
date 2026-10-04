@@ -17,7 +17,7 @@ public class AppShell implements AppShellConfigurator {
                 "try{var t=localStorage.getItem('luvd1s-theme');" +
                 "if(t==='dark'){document.documentElement.setAttribute('theme','dark');}" +
                 "}catch(e){}",
-                Inline.Wrapping.PRESERVE_WHITESPACE
+                Inline.Wrapping.JAVASCRIPT
         );
     }
 }
