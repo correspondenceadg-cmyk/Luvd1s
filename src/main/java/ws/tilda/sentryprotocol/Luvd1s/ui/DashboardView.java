@@ -159,11 +159,13 @@ public class DashboardView extends VerticalLayout {
         Button peopleButton = new Button("People", VaadinIcon.USERS.create(),
                 e -> UI.getCurrent().navigate(PeopleView.class));
         peopleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        peopleButton.setAriaLabel("Go to people list");
 
         ThemeToggle themeToggle = new ThemeToggle();
 
         Button logoutButton = new Button("Log out", e -> authContext.logout());
         logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        logoutButton.setAriaLabel("Log out of your account");
 
         HorizontalLayout buttons = new HorizontalLayout(peopleButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
@@ -224,6 +226,7 @@ public class DashboardView extends VerticalLayout {
                 .set("letter-spacing", "0.5px");
 
         card.add(valueSpan, labelSpan);
+        card.getElement().setAttribute("aria-label", value + " " + label);
         return card;
     }
 
@@ -289,6 +292,7 @@ public class DashboardView extends VerticalLayout {
                 .set("border-radius", "10px")
                 .set("flex", "1")
                 .set("overflow", "hidden");
+        track.getElement().setAttribute("aria-label", label + ": " + value);
 
         Div fill = new Div();
         double percent = max == 0 ? 0 : (value * 100.0) / max;
@@ -386,9 +390,7 @@ public class DashboardView extends VerticalLayout {
                     : java.time.temporal.ChronoUnit.DAYS.between(
                             p.getLastContactedAt().toLocalDate(), today);
 
-            Span status = new Span(days < 0
-                    ? "Never contacted"
-                    : days + " days ago");
+            Span status = new Span(days < 0 ? "Never contacted" : days + " days ago");
             status.getStyle()
                     .set("color", "#FF9800")
                     .set("font-weight", "600")
@@ -397,6 +399,7 @@ public class DashboardView extends VerticalLayout {
             Button open = new Button("Open", e ->
                     UI.getCurrent().navigate(PersonDetailView.class, p.getId()));
             open.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+            open.setAriaLabel("Open " + p.getFirstName() + " " + p.getLastName());
 
             HorizontalLayout row = new HorizontalLayout(name, status, open);
             row.setWidthFull();
