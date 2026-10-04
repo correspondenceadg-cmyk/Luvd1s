@@ -44,7 +44,6 @@ public class LineChart extends Div {
 
         List<Map.Entry<LocalDate, Long>> entries = new ArrayList<>(data.entrySet());
         int n = entries.size();
-
         int gridCount = 4;
 
         // Horizontal gridlines
@@ -60,12 +59,14 @@ public class LineChart extends Div {
             svg.appendChild(line);
         }
 
-        // Y-axis labels — use double math so labels are distinct
+        // Y-axis labels — fractional when needed, whole numbers when clean
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             double raw = maxY - ((double) maxY * i) / gridCount;
-            long value = Math.round(raw);
-            if (value < 0) value = 0;
+            if (raw < 0) raw = 0;
+            String label = (raw == Math.floor(raw))
+                    ? String.valueOf((long) raw)
+                    : String.format("%.1f", raw);
 
             Element text = new Element("text");
             text.setAttribute("x", String.valueOf(PAD_L - 8));
@@ -73,7 +74,7 @@ public class LineChart extends Div {
             text.setAttribute("text-anchor", "end");
             text.setAttribute("font-size", "12");
             text.setAttribute("fill", "var(--lumo-secondary-text-color)");
-            text.setText(String.valueOf(value));
+            text.setText(label);
             svg.appendChild(text);
         }
 
@@ -96,7 +97,7 @@ public class LineChart extends Div {
         axisY.setAttribute("stroke-width", "1");
         svg.appendChild(axisY);
 
-        // Build the path
+        // Path
         StringBuilder pathD = new StringBuilder();
         for (int i = 0; i < n; i++) {
             int x = PAD_L + (n <= 1 ? chartW / 2 : (i * chartW) / (n - 1));
