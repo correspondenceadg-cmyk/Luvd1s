@@ -1,0 +1,238 @@
+/* ============================================================
+   Boot overlay
+   ============================================================ */
+
+#debug-boot-overlay {
+    position: fixed;
+    inset: 0;
+    background: #07090a;
+    color: #4ade80;
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Courier New", monospace;
+    font-size: 18px;
+    padding: 40px 24px;
+    z-index: 99999;
+    pointer-events: all;
+    transition: opacity 700ms ease-out;
+    overflow: hidden;
+}
+
+#debug-boot-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+
+#debug-boot-overlay.boot-fadeout {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.boot-lines {
+    max-width: 640px;
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+}
+
+.boot-line {
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+}
+
+.boot-text {
+    white-space: pre;
+}
+
+.boot-dots {
+    display: inline-block;
+    min-width: 32px;
+    text-align: left;
+}
+
+/* ============================================================
+   CRT overlay — three modes via html[data-crt-mode]
+   ============================================================ */
+
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9000;
+}
+
+.crt-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 60%,
+        rgba(0, 0, 0, 0.22) 100%
+    );
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease-out;
+}
+
+html[data-crt-mode="subtle"] .crt-overlay::after,
+html[data-crt-mode="full"] .crt-overlay::after {
+    opacity: 1;
+}
+
+.crt-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease-out;
+}
+
+html[data-crt-mode="subtle"] .crt-overlay::before,
+html[data-crt-mode="full"] .crt-overlay::before {
+    opacity: 1;
+}
+
+.crt-flicker {
+    position: absolute;
+    inset: 0;
+    background: rgba(18, 16, 16, 0.10);
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+}
+
+html[data-crt-mode="full"] .crt-flicker {
+    display: block;
+    animation: crt-flicker 0.15s infinite;
+}
+
+@keyframes crt-flicker {
+    0%   { opacity: 0.27861; }
+    5%   { opacity: 0.34769; }
+    10%  { opacity: 0.23604; }
+    15%  { opacity: 0.90626; }
+    20%  { opacity: 0.18128; }
+    25%  { opacity: 0.83891; }
+    30%  { opacity: 0.65583; }
+    35%  { opacity: 0.67807; }
+    40%  { opacity: 0.26559; }
+    45%  { opacity: 0.84693; }
+    50%  { opacity: 0.96019; }
+    55%  { opacity: 0.08594; }
+    60%  { opacity: 0.20313; }
+    65%  { opacity: 0.71988; }
+    70%  { opacity: 0.53455; }
+    75%  { opacity: 0.37288; }
+    80%  { opacity: 0.71428; }
+    85%  { opacity: 0.70419; }
+    90%  { opacity: 0.70030; }
+    95%  { opacity: 0.36108; }
+    100% { opacity: 0.24387; }
+}
+
+html[data-crt-mode="full"] .debug-card h3,
+html[data-crt-mode="full"] .debug-card .stat-value,
+html[data-crt-mode="full"] .debug-card .stat-label {
+    animation: crt-text-shadow 0.5s infinite;
+}
+
+@keyframes crt-text-shadow {
+    0%   { text-shadow: 0.44px 0 1px rgba(0, 30, 255, 0.5), -0.44px 0 1px rgba(255, 0, 80, 0.3); }
+    5%   { text-shadow: 2.79px 0 1px rgba(0, 30, 255, 0.5), -2.79px 0 1px rgba(255, 0, 80, 0.3); }
+    10%  { text-shadow: 0.03px 0 1px rgba(0, 30, 255, 0.5), -0.03px 0 1px rgba(255, 0, 80, 0.3); }
+    15%  { text-shadow: 0.40px 0 1px rgba(0, 30, 255, 0.5), -0.40px 0 1px rgba(255, 0, 80, 0.3); }
+    20%  { text-shadow: 3.48px 0 1px rgba(0, 30, 255, 0.5), -3.48px 0 1px rgba(255, 0, 80, 0.3); }
+    25%  { text-shadow: 1.61px 0 1px rgba(0, 30, 255, 0.5), -1.61px 0 1px rgba(255, 0, 80, 0.3); }
+    30%  { text-shadow: 3.07px 0 1px rgba(0, 30, 255, 0.5), -3.07px 0 1px rgba(255, 0, 80, 0.3); }
+    35%  { text-shadow: 2.34px 0 1px rgba(0, 30, 255, 0.5), -2.34px 0 1px rgba(255, 0, 80, 0.3); }
+    40%  { text-shadow: 0.03px 0 1px rgba(0, 30, 255, 0.5), -0.03px 0 1px rgba(255, 0, 80, 0.3); }
+    45%  { text-shadow: 0.63px 0 1px rgba(0, 30, 255, 0.5), -0.63px 0 1px rgba(255, 0, 80, 0.3); }
+    50%  { text-shadow: 3.07px 0 1px rgba(0, 30, 255, 0.5), -3.07px 0 1px rgba(255, 0, 80, 0.3); }
+    55%  { text-shadow: 1.12px 0 1px rgba(0, 30, 255, 0.5), -1.12px 0 1px rgba(255, 0, 80, 0.3); }
+    60%  { text-shadow: 2.62px 0 1px rgba(0, 30, 255, 0.5), -2.62px 0 1px rgba(255, 0, 80, 0.3); }
+    65%  { text-shadow: 3.56px 0 1px rgba(0, 30, 255, 0.5), -3.56px 0 1px rgba(255, 0, 80, 0.3); }
+    70%  { text-shadow: 0.47px 0 1px rgba(0, 30, 255, 0.5), -0.47px 0 1px rgba(255, 0, 80, 0.3); }
+    75%  { text-shadow: 2.79px 0 1px rgba(0, 30, 255, 0.5), -2.79px 0 1px rgba(255, 0, 80, 0.3); }
+    80%  { text-shadow: 2.84px 0 1px rgba(0, 30, 255, 0.5), -2.84px 0 1px rgba(255, 0, 80, 0.3); }
+    85%  { text-shadow: 0.63px 0 1px rgba(0, 30, 255, 0.5), -0.63px 0 1px rgba(255, 0, 80, 0.3); }
+    90%  { text-shadow: 1.39px 0 1px rgba(0, 30, 255, 0.5), -1.39px 0 1px rgba(255, 0, 80, 0.3); }
+    95%  { text-shadow: 1.99px 0 1px rgba(0, 30, 255, 0.5), -1.99px 0 1px rgba(255, 0, 80, 0.3); }
+    100% { text-shadow: 2.61px 0 1px rgba(0, 30, 255, 0.5), -2.61px 0 1px rgba(255, 0, 80, 0.3); }
+}
+
+/* ============================================================
+   Debug cards
+   ============================================================ */
+
+@keyframes scan-sweep {
+    0%   { transform: translateX(-120%); opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: translateX(120%); opacity: 0; }
+}
+
+.debug-card {
+    position: relative;
+    overflow: hidden;
+    padding: 16px;
+    border-radius: 8px;
+    background-color: var(--lumo-contrast-5pct);
+    border-left: 4px solid var(--lumo-primary-color);
+    animation: debug-card-in 400ms ease-out both;
+}
+
+@keyframes debug-card-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.debug-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 30%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--lumo-primary-color-50pct) 50%,
+        transparent 100%);
+    animation: scan-sweep 900ms ease-out 1 forwards;
+    pointer-events: none;
+}
+
+.debug-card:nth-of-type(2)::before { animation-delay: 100ms; }
+.debug-card:nth-of-type(3)::before { animation-delay: 200ms; }
+.debug-card:nth-of-type(4)::before { animation-delay: 300ms; }
+.debug-card:nth-of-type(5)::before { animation-delay: 400ms; }
+
+/* ============================================================
+   Accessibility
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .debug-card,
+    .debug-card::before,
+    #debug-boot-overlay,
+    .crt-flicker,
+    .debug-card h3,
+    .debug-card .stat-value,
+    .debug-card .stat-label {
+        animation: none !important;
+        transition: none !important;
+    }
+    #debug-boot-overlay { display: none; }
+    .debug-card::before { display: none; }
+    .crt-flicker { display: none !important; }
+}
