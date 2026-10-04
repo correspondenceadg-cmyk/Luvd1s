@@ -105,7 +105,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         logout.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         logout.setAriaLabel("Log out of your account");
 
-        HorizontalLayout actions = new HorizontalLayout(back, log, themeToggle, logout);
+        HorizontalLayout actions = new HorizontalLayout(back, log, debug, themeToggle, logout);
         actions.setWidthFull();
         actions.setJustifyContentMode(JustifyContentMode.BETWEEN);
         actions.setAlignItems(Alignment.CENTER);
