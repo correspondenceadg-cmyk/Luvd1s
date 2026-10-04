@@ -216,6 +216,7 @@ html[data-crt-mode="full"] .debug-card .stat-label {
 .debug-card:nth-of-type(3)::before { animation-delay: 200ms; }
 .debug-card:nth-of-type(4)::before { animation-delay: 300ms; }
 .debug-card:nth-of-type(5)::before { animation-delay: 400ms; }
+.debug-card:nth-of-type(6)::before { animation-delay: 500ms; }
 
 /* ============================================================
    Accessibility
