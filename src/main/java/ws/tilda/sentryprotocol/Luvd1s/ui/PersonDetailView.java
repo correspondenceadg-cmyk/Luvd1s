@@ -5,6 +5,7 @@ import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.service.AnalyticsService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.BarChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.LineChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.Component;
@@ -12,7 +13,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -29,6 +29,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -166,71 +167,14 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         }
 
         analyticsBlock.add(new H3("Frequency of contact"));
-        Map<java.time.LocalDate, Long> weekly = analyticsService.interactionsByWeek(interactions, CHART_WEEKS);
+        Map<LocalDate, Long> weekly = analyticsService.interactionsByWeek(interactions, CHART_WEEKS);
         analyticsBlock.add(new LineChart(weekly, "#4CAF50"));
 
         analyticsBlock.add(new H3("Interaction types"));
-        analyticsBlock.add(buildTypeBarChart(analyticsService.countByType(interactions)));
-    }
-
-    private VerticalLayout buildTypeBarChart(Map<String, Long> data) {
-        VerticalLayout container = new VerticalLayout();
-        container.setPadding(false);
-        container.setSpacing(true);
-        container.setWidthFull();
-
-        if (data.isEmpty()) {
-            Span empty = new Span("No data to show yet.");
-            empty.getStyle()
-                    .set("color", "var(--lumo-secondary-text-color)")
-                    .set("font-style", "italic");
-            container.add(empty);
-            return container;
-        }
-
-        long max = data.values().stream().max(Long::compare).orElse(1L);
-        for (Map.Entry<String, Long> entry : data.entrySet()) {
-            container.add(typeBarRow(entry.getKey(), entry.getValue(), max));
-        }
-        return container;
-    }
-
-    private HorizontalLayout typeBarRow(String label, long value, long max) {
-        Span labelSpan = new Span(label);
-        labelSpan.getStyle()
-                .set("width", "90px")
-                .set("font-size", "0.9em")
-                .set("flex-shrink", "0");
-
-        Div track = new Div();
-        track.getStyle()
-                .set("background-color", "var(--lumo-contrast-10pct)")
-                .set("height", "20px")
-                .set("border-radius", "10px")
-                .set("flex", "1")
-                .set("overflow", "hidden");
-
-        Div fill = new Div();
-        double percent = max == 0 ? 0 : (value * 100.0) / max;
-        fill.getStyle()
-                .set("background-color", "#2196F3")
-                .set("height", "100%")
-                .set("width", percent + "%")
-                .set("border-radius", "10px");
-        track.add(fill);
-
-        Span valueSpan = new Span(String.valueOf(value));
-        valueSpan.getStyle()
-                .set("width", "30px")
-                .set("text-align", "right")
-                .set("font-weight", "600")
-                .set("flex-shrink", "0");
-
-        HorizontalLayout row = new HorizontalLayout(labelSpan, track, valueSpan);
-        row.setWidthFull();
-        row.setAlignItems(Alignment.CENTER);
-        row.setSpacing(true);
-        return row;
+        analyticsBlock.add(new BarChart(
+                analyticsService.countByType(interactions),
+                "#2196F3"
+        ));
     }
 
     private void renderTimeline() {
