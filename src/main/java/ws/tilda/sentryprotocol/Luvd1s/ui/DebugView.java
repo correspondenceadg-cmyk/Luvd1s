@@ -8,6 +8,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.StyleSheet;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -54,6 +55,8 @@ public class DebugView extends VerticalLayout {
         setWidthFull();
 
         add(buildHeader());
+        add(buildObservabilityCard());
+        add(buildBusinessCountersCard());
         add(buildRecentRequestsCard());
         add(buildAuditCard());
         add(buildJvmCard());
@@ -133,6 +136,69 @@ public class DebugView extends VerticalLayout {
 
     private String capitalize(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    private Div buildObservabilityCard() {
+        Div card = new Div();
+        card.addClassName("debug-card");
+        card.setWidthFull();
+
+        H3 heading = new H3("Observability");
+        heading.getStyle().set("margin", "0 0 12px 0");
+        card.add(heading);
+
+        for (Map.Entry<String, String> e : debugService.httpStats().entrySet()) {
+            card.add(statRow(e.getKey(), e.getValue()));
+        }
+
+        card.add(new Span(""));
+        Span poolLabel = new Span("Connection pool");
+        poolLabel.getStyle()
+                .set("display", "block")
+                .set("font-size", "0.8em")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.5px")
+                .set("margin", "12px 0 6px 0");
+        card.add(poolLabel);
+
+        for (Map.Entry<String, String> e : debugService.poolStats().entrySet()) {
+            card.add(statRow(e.getKey(), e.getValue()));
+        }
+
+        Span scrapeLabel = new Span("Prometheus scrape endpoint");
+        scrapeLabel.getStyle()
+                .set("display", "block")
+                .set("font-size", "0.8em")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.5px")
+                .set("margin", "12px 0 6px 0");
+        card.add(scrapeLabel);
+
+        Anchor scrape = new Anchor(debugService.scrapeUrl(), debugService.scrapeUrl());
+        scrape.setTarget("_blank");
+        scrape.getStyle()
+                .set("font-family", "ui-monospace, SFMono-Regular, monospace")
+                .set("font-size", "0.85em");
+        card.add(scrape);
+
+        return card;
+    }
+
+    private Div buildBusinessCountersCard() {
+        Div card = new Div();
+        card.addClassName("debug-card");
+        card.setWidthFull();
+
+        H3 heading = new H3("Business counters");
+        heading.getStyle().set("margin", "0 0 12px 0");
+        card.add(heading);
+
+        for (Map.Entry<String, String> e : debugService.businessCounters().entrySet()) {
+            card.add(statRow(e.getKey(), e.getValue()));
+        }
+        return card;
     }
 
     private Div buildRecentRequestsCard() {
@@ -387,7 +453,7 @@ public class DebugView extends VerticalLayout {
         labelSpan.getStyle()
                 .set("font-weight", "500")
                 .set("color", "var(--lumo-secondary-text-color)")
-                .set("min-width", "140px")
+                .set("min-width", "160px")
                 .set("text-transform", "capitalize");
 
         Span valueSpan = new Span(value);
