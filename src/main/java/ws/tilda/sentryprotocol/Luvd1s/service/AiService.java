@@ -43,9 +43,9 @@ public class AiService {
     }
 
     /**
-     * Generic chat completion. Messages are expected to already be scrubbed
-     * of PII by the caller. This method does not enforce that — the
-     * AiChatService is the only intended caller.
+     * Generic chat completion. Callers are expected to have already scrubbed
+     * PII from the messages before calling this. The AiChatService is the
+     * only intended caller.
      */
     public Optional<String> chat(List<Map<String, String>> messages) {
         if (!isConfigured()) return Optional.empty();
