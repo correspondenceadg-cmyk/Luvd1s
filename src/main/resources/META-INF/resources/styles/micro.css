@@ -1,0 +1,115 @@
+/* ============================================================
+   Save-button success pulse
+   ============================================================ */
+
+@keyframes micro-pulse-success {
+    0%   { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.6); background-color: var(--lumo-primary-color); }
+    30%  { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.3); background-color: #4CAF50; }
+    100% { box-shadow: 0 0 0 14px rgba(76, 175, 80, 0); background-color: var(--lumo-primary-color); }
+}
+
+.micro-pulse-success {
+    animation: micro-pulse-success 700ms ease-out 1;
+}
+
+/* ============================================================
+   Validation shake
+   ============================================================ */
+
+@keyframes micro-shake {
+    0%   { transform: translateX(0); }
+    15%  { transform: translateX(-6px); }
+    30%  { transform: translateX(5px); }
+    45%  { transform: translateX(-4px); }
+    60%  { transform: translateX(3px); }
+    75%  { transform: translateX(-2px); }
+    100% { transform: translateX(0); }
+}
+
+.micro-shake {
+    animation: micro-shake 380ms ease-in-out 1;
+}
+
+/* ============================================================
+   Grid fade on data change
+   ============================================================ */
+
+@keyframes micro-fade {
+    0%   { opacity: 0.35; }
+    100% { opacity: 1; }
+}
+
+.micro-fade {
+    animation: micro-fade 320ms ease-out 1;
+}
+
+/* ============================================================
+   Grid row hover lift
+   ============================================================ */
+
+vaadin-grid::part(row) {
+    transition: background-color 140ms ease-out;
+}
+
+vaadin-grid::part(row):hover {
+    background-color: var(--lumo-primary-color-10pct);
+}
+
+/* ============================================================
+   Interaction card hover
+   ============================================================ */
+
+.interaction-card {
+    transition: transform 160ms ease-out, box-shadow 160ms ease-out, background-color 160ms ease-out;
+}
+
+.interaction-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    background-color: var(--lumo-contrast-10pct) !important;
+}
+
+/* ============================================================
+   Dialog open animation
+   ============================================================ */
+
+vaadin-dialog-overlay[opened]::part(overlay),
+vaadin-confirm-dialog-overlay[opened]::part(overlay) {
+    animation: micro-dialog-in 220ms cubic-bezier(0.34, 1.28, 0.64, 1) 1;
+}
+
+@keyframes micro-dialog-in {
+    0%   { opacity: 0; transform: scale(0.96) translateY(6px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ============================================================
+   Notification slide-in
+   ============================================================ */
+
+vaadin-notification-card {
+    animation: micro-notif-in 240ms ease-out 1;
+}
+
+@keyframes micro-notif-in {
+    0%   { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Reduced motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .micro-pulse-success,
+    .micro-shake,
+    .micro-fade,
+    vaadin-dialog-overlay[opened]::part(overlay),
+    vaadin-confirm-dialog-overlay[opened]::part(overlay),
+    vaadin-notification-card,
+    .interaction-card {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
+}
