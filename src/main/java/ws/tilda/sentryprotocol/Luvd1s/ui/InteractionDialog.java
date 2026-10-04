@@ -4,6 +4,7 @@ import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.InteractionType;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.Feedback;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,6 +26,8 @@ public class InteractionDialog extends Dialog {
     private final ComboBox<InteractionType> type = new ComboBox<>("Type");
     private final DateTimePicker occurredAt = new DateTimePicker("When");
     private final TextArea summary = new TextArea("Summary");
+
+    private final FormLayout form = new FormLayout();
 
     public InteractionDialog(InteractionService service, Person person, Runnable onSaved) {
         this(service, person, onSaved, null);
@@ -56,11 +59,11 @@ public class InteractionDialog extends Dialog {
             occurredAt.setValue(LocalDateTime.now());
         }
 
-        FormLayout form = new FormLayout(type, occurredAt, summary);
+        form.add(type, occurredAt, summary);
         form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
         add(form);
 
-        Button saveButton = new Button(existing == null ? "Save" : "Update", e -> save());
+        Button saveButton = new Button(existing == null ? "Save" : "Update", e -> save(saveButtonOrSelf()));
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         Button cancelButton = new Button("Cancel", e -> close());
@@ -68,8 +71,13 @@ public class InteractionDialog extends Dialog {
         getFooter().add(cancelButton, saveButton);
     }
 
-    private void save() {
+    private Button saveButtonOrSelf() {
+        return (Button) getFooter().getComponentAt(1);
+    }
+
+    private void save(Button saveButton) {
         if (type.getValue() == null || occurredAt.getValue() == null) {
+            Feedback.shake(form);
             Notification.show("Type and date are required");
             return;
         }
@@ -81,6 +89,8 @@ public class InteractionDialog extends Dialog {
         interaction.setSummary(summary.getValue());
 
         service.save(interaction);
+
+        Feedback.pulseSuccess(saveButton);
         Notification.show(existing == null ? "Interaction logged" : "Interaction updated");
         onSaved.run();
         close();
