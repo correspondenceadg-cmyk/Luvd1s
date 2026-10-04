@@ -47,7 +47,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @PermitAll
-@Route("")
+@Route("people")
 @PageTitle("People")
 public class PeopleView extends VerticalLayout {
 
