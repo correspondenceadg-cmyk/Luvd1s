@@ -36,6 +36,10 @@ public class SecurityConfig {
             configurer.loginView(LoginView.class);
         });
 
+        http.csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
+        );
+
         return http.build();
     }
 
