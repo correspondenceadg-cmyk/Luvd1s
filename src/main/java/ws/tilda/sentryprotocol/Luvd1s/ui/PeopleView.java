@@ -3,6 +3,7 @@ package ws.tilda.sentryprotocol.Luvd1s.ui;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
 import ws.tilda.sentryprotocol.Luvd1s.data.Tag;
 import ws.tilda.sentryprotocol.Luvd1s.service.AiChatService;
+import ws.tilda.sentryprotocol.Luvd1s.service.ContactImporter;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
 import ws.tilda.sentryprotocol.Luvd1s.service.TagService;
@@ -61,6 +62,7 @@ public class PeopleView extends VerticalLayout {
     private final TagService tagService;
     private final AuthenticationContext authContext;
     private final AiChatService aiChatService;
+    private final ContactImporter contactImporter;
 
     private final Grid<Person> grid = new Grid<>(Person.class, false);
     private final Binder<Person> binder = new Binder<>(Person.class);
@@ -93,12 +95,14 @@ public class PeopleView extends VerticalLayout {
                       InteractionService interactionService,
                       TagService tagService,
                       AuthenticationContext authContext,
-                      AiChatService aiChatService) {
+                      AiChatService aiChatService,
+                      ContactImporter contactImporter) {
         this.personService = personService;
         this.interactionService = interactionService;
         this.tagService = tagService;
         this.authContext = authContext;
         this.aiChatService = aiChatService;
+        this.contactImporter = contactImporter;
 
         setPadding(false);
         setSpacing(true);
@@ -169,6 +173,11 @@ public class PeopleView extends VerticalLayout {
         dashboardButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         dashboardButton.setAriaLabel("Go to dashboard");
 
+        Button importButton = new Button("Import", VaadinIcon.UPLOAD.create(),
+                e -> new ImportDialog(contactImporter, personService, this::loadAsync).open());
+        importButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        importButton.setAriaLabel("Import contacts from a file");
+
         Button debugButton = new Button("Debug", VaadinIcon.COG.create(),
                 e -> UI.getCurrent().navigate(DebugView.class));
         debugButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -180,7 +189,8 @@ public class PeopleView extends VerticalLayout {
         logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         logoutButton.setAriaLabel("Log out of your account");
 
-        HorizontalLayout buttons = new HorizontalLayout(dashboardButton, debugButton, themeToggle, logoutButton);
+        HorizontalLayout buttons = new HorizontalLayout(
+                dashboardButton, importButton, debugButton, themeToggle, logoutButton);
         buttons.setSpacing(true);
         buttons.setAlignItems(Alignment.CENTER);
         buttons.getStyle().set("flex-wrap", "wrap");
