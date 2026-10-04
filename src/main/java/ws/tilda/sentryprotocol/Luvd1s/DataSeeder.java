@@ -8,9 +8,29 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Random;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
+
+    private static final String[] SUMMARIES = {
+            "Quick check-in",
+            "Discussed project timeline",
+            "Caught up over coffee",
+            "Followed up on the proposal",
+            "Birthday call",
+            "Reviewed the contract",
+            "Grabbed lunch",
+            "Talked about the new role",
+            "Networking intro",
+            "Sent a thank-you note",
+            "Slack thread about hiring",
+            "Dropped off a book",
+            "Sync on the roadmap",
+            "Weekly standup call",
+            "Happy hour catch-up"
+    };
 
     private final PersonRepository people;
     private final InteractionRepository interactions;
@@ -59,23 +79,59 @@ public class DataSeeder implements CommandLineRunner {
 
         Person alice = person(admin, "Alice", "Nguyen", "alice@example.com", "Acme", "Engineer",
                 LocalDate.of(1990, 5, 12), friend, work);
-        person(admin, "Bob", "Martinez", "bob@example.com", "Globex", "Designer",
+        Person bob = person(admin, "Bob", "Martinez", "bob@example.com", "Globex", "Designer",
                 LocalDate.of(1988, 11, 3), work);
-        person(admin, "Carla", "Okafor", "carla@example.com", "Acme", "PM",
+        Person carla = person(admin, "Carla", "Okafor", "carla@example.com", "Acme", "PM",
                 LocalDate.of(1992, 2, 27), friend, college);
-        person(admin, "Dev", "Patel", "dev@example.com", "Initech", "Founder",
+        Person dev = person(admin, "Dev", "Patel", "dev@example.com", "Initech", "Founder",
                 LocalDate.of(1985, 7, 19), friend, work, college);
-        person(admin, "Elena", "Rossi", "elena@example.com", "Globex", "CTO",
+        Person elena = person(admin, "Elena", "Rossi", "elena@example.com", "Globex", "CTO",
                 LocalDate.of(1980, 12, 30), work, family);
 
-        Interaction i = new Interaction();
-        i.setPerson(alice);
-        i.setType(InteractionType.COFFEE);
-        i.setOccurredAt(LocalDateTime.now().minusDays(3));
-        i.setSummary("Caught up about her new role.");
-        interactions.save(i);
-        alice.setLastContactedAt(i.getOccurredAt());
-        people.save(alice);
+        Random rng = new Random(42);
+
+        List<Person> all = List.of(alice, bob, carla, dev, elena);
+        int[] baseFrequencies = {6, 3, 8, 5, 2};
+
+        for (int idx = 0; idx < all.size(); idx++) {
+            Person p = all.get(idx);
+            int count = baseFrequencies[idx] + rng.nextInt(6);
+            int trend = idx % 2 == 0 ? -1 : 1;
+
+            for (int i = 0; i < count; i++) {
+                int daysAgo = rng.nextInt(150) + 1;
+                if (trend < 0) {
+                    daysAgo = (int) (daysAgo * (1.0 - i * 0.1));
+                } else {
+                    daysAgo = (int) (daysAgo * (0.3 + i * 0.15));
+                }
+                daysAgo = Math.max(1, Math.min(170, daysAgo));
+
+                Interaction interaction = new Interaction();
+                interaction.setPerson(p);
+                interaction.setType(InteractionType.values()[rng.nextInt(InteractionType.values().length)]);
+                interaction.setOccurredAt(LocalDateTime.now()
+                        .minusDays(daysAgo)
+                        .minusHours(rng.nextInt(24))
+                        .minusMinutes(rng.nextInt(60)));
+                interaction.setSummary(SUMMARIES[rng.nextInt(SUMMARIES.length)]);
+                interactions.save(interaction);
+            }
+
+            refreshLastContacted(p);
+            people.save(p);
+        }
+    }
+
+    private void refreshLastContacted(Person person) {
+        LocalDateTime latest = interactions
+                .findByPersonIdOrderByOccurredAtDesc(person.getId())
+                .stream()
+                .map(Interaction::getOccurredAt)
+                .filter(java.util.Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+        person.setLastContactedAt(latest);
     }
 
     private Tag tag(User owner, String name, String color) {
