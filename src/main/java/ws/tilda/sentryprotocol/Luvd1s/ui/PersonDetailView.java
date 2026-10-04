@@ -2,14 +2,17 @@ package ws.tilda.sentryprotocol.Luvd1s.ui;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Interaction;
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
+import ws.tilda.sentryprotocol.Luvd1s.service.AnalyticsService;
 import ws.tilda.sentryprotocol.Luvd1s.service.InteractionService;
 import ws.tilda.sentryprotocol.Luvd1s.service.PersonService;
+import ws.tilda.sentryprotocol.Luvd1s.ui.components.LineChart;
 import ws.tilda.sentryprotocol.Luvd1s.ui.components.ThemeToggle;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -28,31 +31,40 @@ import jakarta.annotation.security.PermitAll;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @PermitAll
 @Route("person")
 @PageTitle("Person")
 public class PersonDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 
+    private static final int CHART_WEEKS = 12;
+
     private final PersonService personService;
     private final InteractionService interactionService;
+    private final AnalyticsService analyticsService;
     private final AuthenticationContext authContext;
 
     private final VerticalLayout header = new VerticalLayout();
+    private final VerticalLayout analyticsBlock = new VerticalLayout();
     private final VerticalLayout timeline = new VerticalLayout();
 
     private Person person;
 
     public PersonDetailView(PersonService personService,
                             InteractionService interactionService,
+                            AnalyticsService analyticsService,
                             AuthenticationContext authContext) {
         this.personService = personService;
         this.interactionService = interactionService;
+        this.analyticsService = analyticsService;
         this.authContext = authContext;
 
-        setSizeFull();
-        setPadding(true);
+        setPadding(false);
         setSpacing(true);
+        getStyle().set("padding", "12px");
+        getStyle().set("box-sizing", "border-box");
+        setWidthFull();
     }
 
     @Override
@@ -80,7 +92,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         back.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         back.setAriaLabel("Back to people list");
 
-        Button log = new Button("Log interaction", VaadinIcon.BOLT.create());
+        Button log = new Button("Log", VaadinIcon.BOLT.create());
         log.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         log.addClickListener(e -> new InteractionDialog(
                 interactionService, person, this::render).open());
@@ -96,9 +108,12 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         actions.setWidthFull();
         actions.setJustifyContentMode(JustifyContentMode.BETWEEN);
         actions.setAlignItems(Alignment.CENTER);
+        actions.getStyle().set("flex-wrap", "wrap");
+        actions.getStyle().set("gap", "4px");
 
         header.removeAll();
         H2 name = new H2(person.getFirstName() + " " + person.getLastName());
+        name.getStyle().set("margin", "0");
         header.add(name);
 
         StringBuilder metaLine = new StringBuilder();
@@ -122,12 +137,107 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         header.setPadding(false);
         header.setSpacing(false);
 
-        add(actions, header, new H3("Interaction history"), timeline);
+        add(actions, header);
+
+        renderAnalytics();
+        add(analyticsBlock);
+
+        add(new H3("Interaction history"));
+        add(timeline);
         renderTimeline();
+    }
+
+    private void renderAnalytics() {
+        analyticsBlock.removeAll();
+        analyticsBlock.setPadding(false);
+        analyticsBlock.setSpacing(true);
+        analyticsBlock.setWidthFull();
+
+        List<Interaction> interactions = interactionService.findByPerson(person);
+
+        if (interactions.isEmpty()) {
+            Span empty = new Span("No interaction data yet — log one to see charts.");
+            empty.getStyle()
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-style", "italic")
+                    .set("padding", "16px 0");
+            analyticsBlock.add(empty);
+            return;
+        }
+
+        analyticsBlock.add(new H3("Frequency of contact"));
+        Map<java.time.LocalDate, Long> weekly = analyticsService.interactionsByWeek(interactions, CHART_WEEKS);
+        analyticsBlock.add(new LineChart(weekly, "#4CAF50"));
+
+        analyticsBlock.add(new H3("Interaction types"));
+        analyticsBlock.add(buildTypeBarChart(analyticsService.countByType(interactions)));
+    }
+
+    private VerticalLayout buildTypeBarChart(Map<String, Long> data) {
+        VerticalLayout container = new VerticalLayout();
+        container.setPadding(false);
+        container.setSpacing(true);
+        container.setWidthFull();
+
+        if (data.isEmpty()) {
+            Span empty = new Span("No data to show yet.");
+            empty.getStyle()
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-style", "italic");
+            container.add(empty);
+            return container;
+        }
+
+        long max = data.values().stream().max(Long::compare).orElse(1L);
+        for (Map.Entry<String, Long> entry : data.entrySet()) {
+            container.add(typeBarRow(entry.getKey(), entry.getValue(), max));
+        }
+        return container;
+    }
+
+    private HorizontalLayout typeBarRow(String label, long value, long max) {
+        Span labelSpan = new Span(label);
+        labelSpan.getStyle()
+                .set("width", "90px")
+                .set("font-size", "0.9em")
+                .set("flex-shrink", "0");
+
+        Div track = new Div();
+        track.getStyle()
+                .set("background-color", "var(--lumo-contrast-10pct)")
+                .set("height", "20px")
+                .set("border-radius", "10px")
+                .set("flex", "1")
+                .set("overflow", "hidden");
+
+        Div fill = new Div();
+        double percent = max == 0 ? 0 : (value * 100.0) / max;
+        fill.getStyle()
+                .set("background-color", "#2196F3")
+                .set("height", "100%")
+                .set("width", percent + "%")
+                .set("border-radius", "10px");
+        track.add(fill);
+
+        Span valueSpan = new Span(String.valueOf(value));
+        valueSpan.getStyle()
+                .set("width", "30px")
+                .set("text-align", "right")
+                .set("font-weight", "600")
+                .set("flex-shrink", "0");
+
+        HorizontalLayout row = new HorizontalLayout(labelSpan, track, valueSpan);
+        row.setWidthFull();
+        row.setAlignItems(Alignment.CENTER);
+        row.setSpacing(true);
+        return row;
     }
 
     private void renderTimeline() {
         timeline.removeAll();
+        timeline.setPadding(false);
+        timeline.setSpacing(false);
+        timeline.setWidthFull();
         List<Interaction> interactions = interactionService.findByPerson(person);
 
         if (interactions.isEmpty()) {
@@ -142,9 +252,6 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         for (Interaction i : interactions) {
             timeline.add(interactionCard(i));
         }
-
-        timeline.setPadding(false);
-        timeline.setSpacing(false);
     }
 
     private Component interactionCard(Interaction interaction) {
