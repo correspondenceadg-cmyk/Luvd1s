@@ -216,6 +216,7 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
 
     private Component interactionCard(Interaction interaction) {
         VerticalLayout card = new VerticalLayout();
+        card.addClassName("interaction-card");
         card.setPadding(false);
         card.setSpacing(false);
 
@@ -258,17 +259,6 @@ public class PersonDetailView extends VerticalLayout implements HasUrlParameter<
         cardHeader.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
         card.add(cardHeader);
-
-        if (interaction.getAiSummary() != null && !interaction.getAiSummary().isBlank()) {
-            Span aiText = new Span(interaction.getAiSummary());
-            aiText.getStyle()
-                    .set("margin-top", "8px")
-                    .set("display", "block")
-                    .set("font-size", "0.9em")
-                    .set("color", "var(--lumo-primary-text-color)")
-                    .set("font-style", "italic");
-            card.add(aiText);
-        }
 
         if (interaction.getSummary() != null && !interaction.getSummary().isBlank()) {
             Span summary = new Span(interaction.getSummary());
