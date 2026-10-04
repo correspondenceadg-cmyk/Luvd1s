@@ -19,7 +19,7 @@ public class LineChart extends Div {
     private static final int PAD_B = 55;
 
     public LineChart(Map<LocalDate, Long> data, String accentColor) {
-        setWidthFull();
+        getStyle().set("width", "100%");
         getStyle().set("max-width", WIDTH + "px");
 
         if (data.isEmpty()) {
@@ -30,29 +30,24 @@ public class LineChart extends Div {
             return;
         }
 
-        getStyle().set("position", "relative");
-        getStyle().set("height", "0");
-        getStyle().set("padding-bottom",
-                ((double) HEIGHT / WIDTH * 100.0) + "%");
-
         Element svg = new Element("svg");
         svg.setAttribute("viewBox", "0 0 " + WIDTH + " " + HEIGHT);
         svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
         svg.setAttribute("style",
-                "position:absolute;top:0;left:0;width:100%;height:100%;");
+                "display:block;width:100%;height:auto;max-width:" + WIDTH + "px;");
 
         int chartW = WIDTH - PAD_L - PAD_R;
         int chartH = HEIGHT - PAD_T - PAD_B;
         int baseY = PAD_T + chartH;
 
-        long rawMax = data.values().stream().max(Long::compare).orElse(1L);
-        long maxY = Math.max(1, rawMax);
+        long maxY = Math.max(1, data.values().stream().max(Long::compare).orElse(1L));
 
         List<Map.Entry<LocalDate, Long>> entries = new ArrayList<>(data.entrySet());
         int n = entries.size();
 
         int gridCount = 4;
 
+        // Horizontal gridlines
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
             Element line = new Element("line");
@@ -65,11 +60,12 @@ public class LineChart extends Div {
             svg.appendChild(line);
         }
 
+        // Y-axis labels — use double math so labels are distinct
         for (int i = 0; i <= gridCount; i++) {
             int y = PAD_T + (chartH * i) / gridCount;
-            long value = (i == gridCount)
-                    ? 0
-                    : maxY - (maxY * i) / gridCount;
+            double raw = maxY - ((double) maxY * i) / gridCount;
+            long value = Math.round(raw);
+            if (value < 0) value = 0;
 
             Element text = new Element("text");
             text.setAttribute("x", String.valueOf(PAD_L - 8));
@@ -81,6 +77,7 @@ public class LineChart extends Div {
             svg.appendChild(text);
         }
 
+        // Axes
         Element axisX = new Element("line");
         axisX.setAttribute("x1", String.valueOf(PAD_L));
         axisX.setAttribute("y1", String.valueOf(baseY));
@@ -99,6 +96,7 @@ public class LineChart extends Div {
         axisY.setAttribute("stroke-width", "1");
         svg.appendChild(axisY);
 
+        // Build the path
         StringBuilder pathD = new StringBuilder();
         for (int i = 0; i < n; i++) {
             int x = PAD_L + (n <= 1 ? chartW / 2 : (i * chartW) / (n - 1));
@@ -117,6 +115,7 @@ public class LineChart extends Div {
         path.setAttribute("stroke-linecap", "round");
         svg.appendChild(path);
 
+        // Points
         for (int i = 0; i < n; i++) {
             int x = PAD_L + (n <= 1 ? chartW / 2 : (i * chartW) / (n - 1));
             long v = entries.get(i).getValue();
@@ -133,6 +132,7 @@ public class LineChart extends Div {
             svg.appendChild(dot);
         }
 
+        // X-axis labels
         int labelStep = Math.max(1, (n + 5) / 6);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM d");
         for (int i = 0; i < n; i += labelStep) {
