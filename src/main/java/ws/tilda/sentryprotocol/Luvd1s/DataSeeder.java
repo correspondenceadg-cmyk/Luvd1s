@@ -2,6 +2,7 @@ package ws.tilda.sentryprotocol.Luvd1s;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.*;
 import ws.tilda.sentryprotocol.Luvd1s.repository.*;
+import ws.tilda.sentryprotocol.Luvd1s.service.ApiKeyService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -16,17 +17,20 @@ public class DataSeeder implements CommandLineRunner {
     private final TagRepository tags;
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final ApiKeyService apiKeyService;
 
     public DataSeeder(PersonRepository people,
                       InteractionRepository interactions,
                       TagRepository tags,
                       UserRepository users,
-                      PasswordEncoder passwordEncoder) {
+                      PasswordEncoder passwordEncoder,
+                      ApiKeyService apiKeyService) {
         this.people = people;
         this.interactions = interactions;
         this.tags = tags;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.apiKeyService = apiKeyService;
     }
 
     @Override
@@ -38,6 +42,13 @@ public class DataSeeder implements CommandLineRunner {
             u.setDisplayName("Admin");
             return users.save(u);
         });
+
+        if (admin.getApiKey() == null || admin.getApiKey().isBlank()) {
+            String key = apiKeyService.generateAndStore(admin);
+            System.out.println("========================================================");
+            System.out.println("Admin API key (save this): " + key);
+            System.out.println("========================================================");
+        }
 
         if (people.count() > 0) return;
 
