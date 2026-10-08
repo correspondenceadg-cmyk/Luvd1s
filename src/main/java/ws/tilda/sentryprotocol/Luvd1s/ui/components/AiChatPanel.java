@@ -10,8 +10,8 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
@@ -81,7 +81,8 @@ public class AiChatPanel extends Div {
         );
 
         quotaLabel.addClassName("ai-quota");
-        updateQuotaLabel();
+        // No updateQuotaLabel() here — that call hit the database on the UI thread
+        // during view construction and stalled page loads on cold connections.
 
         messages.setPadding(false);
         messages.setSpacing(true);
