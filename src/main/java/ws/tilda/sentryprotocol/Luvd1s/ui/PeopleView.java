@@ -38,6 +38,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -51,6 +53,8 @@ import java.util.concurrent.CompletableFuture;
 @Route("people")
 @PageTitle("People")
 public class PeopleView extends VerticalLayout {
+
+    private static final Logger log = LoggerFactory.getLogger(PeopleView.class);
 
     private static final int MAX_VISIBLE_ROWS = 20;
     private static final int ROW_HEIGHT = 44;
@@ -158,6 +162,9 @@ public class PeopleView extends VerticalLayout {
                         SecurityContextHolder.clearContext();
                     }
                 });
+            } catch (Exception ex) {
+                log.error("Failed to load people and tags", ex);
+                ui.access(() -> Notification.show("Couldn't load data: " + ex.getMessage()));
             } finally {
                 SecurityContextHolder.clearContext();
             }
