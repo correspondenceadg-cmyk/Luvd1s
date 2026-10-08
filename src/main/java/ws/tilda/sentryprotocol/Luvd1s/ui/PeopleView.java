@@ -155,6 +155,7 @@ public class PeopleView extends VerticalLayout {
                         cachedPeople.clear();
                         cachedPeople.addAll(people);
                         filterTag.setItems(tags);
+                        tagsField.setItems(tags);
                         gridContainer.removeAll();
                         gridContainer.add(grid);
                         applyFilter();
