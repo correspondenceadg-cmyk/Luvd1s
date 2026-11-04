@@ -17,23 +17,23 @@ public class OwnershipCheck {
     }
 
     public boolean owns(Person person) {
-        if (person == null) return true;
+        if (person == null) return false;
         User current = userService.getCurrentUser();
         if (current == null) return false;
-        if (person.getOwner() == null) return true;
+        if (person.getOwner() == null) return false;
         return current.getId().equals(person.getOwner().getId());
     }
 
     public boolean owns(Interaction interaction) {
-        if (interaction == null) return true;
+        if (interaction == null) return false;
         return owns(interaction.getPerson());
     }
 
     public boolean owns(Tag tag) {
-        if (tag == null) return true;
+        if (tag == null) return false;
         User current = userService.getCurrentUser();
         if (current == null) return false;
-        if (tag.getOwner() == null) return true;
+        if (tag.getOwner() == null) return false;
         return current.getId().equals(tag.getOwner().getId());
     }
 }
