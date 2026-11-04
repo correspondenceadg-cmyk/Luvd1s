@@ -7,8 +7,11 @@ COPY src src
 RUN ./mvnw package -DskipTests
 
 FROM eclipse-temurin:21-jre
+RUN groupadd -r app && useradd -r -g app -d /app -s /sbin/nologin app
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+RUN chown -R app:app /app
+USER app
 EXPOSE 8080
 ENTRYPOINT ["java", \
   "-XX:MaxRAMPercentage=50", \
