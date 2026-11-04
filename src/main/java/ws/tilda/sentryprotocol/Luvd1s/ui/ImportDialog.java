@@ -13,6 +13,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.upload.Upload;
+import org.apache.commons.io.input.BoundedInputStream;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -43,7 +44,8 @@ public class ImportDialog extends Dialog {
         setMaxHeight("85vh");
 
         Upload upload = new Upload(event -> {
-            try (InputStream in = event.getInputStream()) {
+            try (InputStream raw = event.getInputStream();
+                 InputStream in = new BoundedInputStream(raw, 5L * 1024 * 1024)) {
                 List<Person> list = importer.parse(event.getFileName(), in);
                 parsed.clear();
                 parsed.addAll(list);
