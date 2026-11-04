@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,13 +44,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             Optional<User> user = apiKeyService.resolve(key);
 
             user.ifPresent(u -> {
-                boolean admin = "admin".equals(u.getUsername());
-                var authorities = admin
-                        ? List.of(new SimpleGrantedAuthority("ROLE_API"),
-                                  new SimpleGrantedAuthority("ROLE_USER"),
-                                  new SimpleGrantedAuthority("ROLE_ADMIN"))
-                        : List.of(new SimpleGrantedAuthority("ROLE_API"),
-                                  new SimpleGrantedAuthority("ROLE_USER"));
+                String role = u.getRole() == null ? "USER" : u.getRole();
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_API"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
 
                 var auth = new UsernamePasswordAuthenticationToken(
                         u.getUsername(),
