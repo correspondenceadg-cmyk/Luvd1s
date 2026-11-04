@@ -36,28 +36,24 @@ public class UserService implements UserDetailsService {
         User user = users.findByUsername(normalized)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String[] roles = "admin".equals(user.getUsername())
-                ? new String[]{"USER", "ADMIN"}
-                : new String[]{"USER"};
-
+        String role = user.getRole() == null ? "USER" : user.getRole();
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPasswordHash())
-                .roles(roles)
+                .roles(role)
                 .build();
     }
 
     public User register(String username, String rawPassword, String displayName) {
         String normalized = UsernameValidator.normalize(username);
-
         if (users.findByUsername(normalized).isPresent()) {
             throw new IllegalArgumentException("Username already taken");
         }
-
         User user = new User();
         user.setUsername(normalized);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setDisplayName(displayName);
+        user.setRole("USER");
         return users.save(user);
     }
 
@@ -67,13 +63,9 @@ public class UserService implements UserDetailsService {
 
     public User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return null;
-        }
+        if (auth == null || !auth.isAuthenticated()) return null;
         String username = auth.getName();
-        if (username == null || "anonymousUser".equals(username)) {
-            return null;
-        }
+        if (username == null || "anonymousUser".equals(username)) return null;
         try {
             return users.findByUsername(UsernameValidator.normalize(username)).orElse(null);
         } catch (IllegalArgumentException ex) {
