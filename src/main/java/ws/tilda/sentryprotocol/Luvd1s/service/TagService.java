@@ -39,7 +39,7 @@ public class TagService {
             t.setName(name);
             t.setColor(color != null ? color : "#888888");
             Tag saved = tags.save(t);
-            auditService.log("CREATE", "Tag", saved.getId(), null);
+            auditService.log("TAG_CREATE", "Tag", saved.getId(), null);
             return saved;
         });
     }
@@ -48,6 +48,6 @@ public class TagService {
     @Transactional
     public void delete(Tag tag) {
         tags.delete(tag);
-        auditService.log("DELETE", "Tag", tag.getId(), null);
+        auditService.log("TAG_DELETE", "Tag", tag.getId(), null);
     }
 }

@@ -45,7 +45,7 @@ public class PersonService {
             person.setOwner(userService.getCurrentUser());
         }
         Person saved = people.save(person);
-        auditService.log(isNew ? "CREATE" : "UPDATE", "Person", saved.getId(), null);
+        auditService.log(isNew ? "PERSON_CREATE" : "PERSON_UPDATE", "Person", saved.getId(), null);
         return saved;
     }
 
@@ -53,7 +53,7 @@ public class PersonService {
     @Transactional
     public void delete(Person person) {
         people.delete(person);
-        auditService.log("DELETE", "Person", person.getId(), null);
+        auditService.log("PERSON_DELETE", "Person", person.getId(), null);
     }
 
     @Transactional

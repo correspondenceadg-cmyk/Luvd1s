@@ -43,7 +43,7 @@ public class InteractionService {
             p.setLastContactedAt(saved.getOccurredAt());
             personService.saveAsOwner(p, p.getOwner());
         }
-        auditService.log(isNew ? "CREATE" : "UPDATE", "Interaction", saved.getId(), null);
+        auditService.log(isNew ? "INTERACTION_CREATE" : "INTERACTION_UPDATE", "Interaction", saved.getId(), null);
         return saved;
     }
 
@@ -51,7 +51,7 @@ public class InteractionService {
     @Transactional
     public void delete(Interaction interaction) {
         interactions.delete(interaction);
-        auditService.log("DELETE", "Interaction", interaction.getId(), null);
+        auditService.log("INTERACTION_DELETE", "Interaction", interaction.getId(), null);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -62,7 +62,7 @@ public class InteractionService {
                 return false;
             }
             interactions.delete(i);
-            auditService.log("DELETE", "Interaction", i.getId(), null);
+            auditService.log("INTERACTION_DELETE", "Interaction", i.getId(), null);
             return true;
         }).orElse(false);
     }
