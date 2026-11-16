@@ -20,4 +20,10 @@ public final class Feedback {
                 "{transform:'translateX(-4px)'},{transform:'translateX(0)'}]," +
                 "{duration:300});");
     }
+
+    public static void fadeRefresh(Component c) {
+        c.getElement().executeJs(
+                "this.animate([{opacity:0.4},{opacity:1}]," +
+                "{duration:400,easing:'ease-out'});");
+    }
 }

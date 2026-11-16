@@ -43,6 +43,12 @@ public class InteractionService {
         return saved;
     }
 
+    @PreAuthorize("isAuthenticated() and @ownership.owns(#interaction)")
+    @Transactional
+    public void delete(Interaction interaction) {
+        interactions.delete(interaction);
+    }
+
     @PreAuthorize("isAuthenticated()")
     @Transactional
     public boolean deleteById(Long id) {

@@ -30,6 +30,11 @@ public class UserService {
 
     @Transactional
     public User register(String rawUsername, String rawPassword) {
+        return register(rawUsername, rawPassword, null);
+    }
+
+    @Transactional
+    public User register(String rawUsername, String rawPassword, String displayName) {
         String username = UsernameValidator.normalize(rawUsername);
         if (users.findByUsername(username).isPresent()) {
             throw new IllegalArgumentException("Username already taken");
@@ -39,7 +44,7 @@ public class UserService {
         }
         User u = new User();
         u.setUsername(username);
-        u.setDisplayName(username);
+        u.setDisplayName(displayName != null && !displayName.isBlank() ? displayName : username);
         u.setPasswordHash(passwordEncoder.encode(rawPassword));
         u.setRole("USER");
         return users.save(u);

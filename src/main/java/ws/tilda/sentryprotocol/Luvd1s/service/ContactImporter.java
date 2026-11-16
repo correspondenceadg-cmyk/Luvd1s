@@ -1,8 +1,13 @@
 package ws.tilda.sentryprotocol.Luvd1s.service;
 
 import ws.tilda.sentryprotocol.Luvd1s.data.Person;
-import com.googlecode.ez.vcard.VCard;
-import com.googlecode.ez.vcard.VCardProperty;
+import ezvcard.Ezvcard;
+import ezvcard.VCard;
+import ezvcard.property.StructuredName;
+import ezvcard.property.Email;
+import ezvcard.property.Telephone;
+import ezvcard.property.Organization;
+import ezvcard.property.Title;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -65,45 +70,34 @@ public class ContactImporter {
 
     private List<Person> parseVcf(InputStream in) throws IOException {
         List<Person> out = new ArrayList<>();
-        VCard vcard = VCard.fromInputStream(in, StandardCharsets.UTF_8);
-        addPerson(out, vcard);
-        return out;
-    }
+        for (VCard card : Ezvcard.parse(in).all()) {
+            Person p = new Person();
+            StructuredName n = card.getStructuredName();
+            if (n != null) {
+                if (n.getFamily() != null) p.setLastName(n.getFamily());
+                if (n.getGiven() != null) p.setFirstName(n.getGiven());
+            }
+            if (p.getFirstName() == null && card.getFormattedName() != null) {
+                String full = card.getFormattedName().getValue();
+                int space = full.indexOf(' ');
+                if (space > 0) {
+                    p.setFirstName(full.substring(0, space));
+                    p.setLastName(full.substring(space + 1));
+                } else {
+                    p.setFirstName(full);
+                }
+            }
 
-    private void addPerson(List<Person> out, VCard card) {
-        if (card == null) return;
-        Person p = new Person();
-        VCardProperty fn = card.getFirstProperty("FN");
-        String full = fn != null ? fn.getRawValue() : null;
+            if (!card.getEmails().isEmpty()) p.setEmail(card.getEmails().get(0).getValue());
+            if (!card.getTelephoneNumbers().isEmpty()) p.setPhone(card.getTelephoneNumbers().get(0).getValue());
+            Organization org = card.getOrganization();
+            if (org != null && !org.getValues().isEmpty()) p.setCompany(String.join(", ", org.getValues()));
+            if (!card.getTitles().isEmpty()) p.setJobTitle(card.getTitles().get(0).getValue());
 
-        VCardProperty n = card.getFirstProperty("N");
-        if (n != null) {
-            String[] parts = n.getRawValue().split(";", -1);
-            if (parts.length > 0 && !parts[0].isBlank()) p.setLastName(parts[0]);
-            if (parts.length > 1 && !parts[1].isBlank()) p.setFirstName(parts[1]);
-        }
-        if (p.getFirstName() == null && full != null) {
-            int space = full.indexOf(' ');
-            if (space > 0) {
-                p.setFirstName(full.substring(0, space));
-                p.setLastName(full.substring(space + 1));
-            } else {
-                p.setFirstName(full);
+            if (p.getFirstName() != null || p.getLastName() != null || p.getEmail() != null) {
+                out.add(p);
             }
         }
-
-        VCardProperty email = card.getFirstProperty("EMAIL");
-        if (email != null) p.setEmail(email.getRawValue());
-
-        VCardProperty tel = card.getFirstProperty("TEL");
-        if (tel != null) p.setPhone(tel.getRawValue());
-
-        VCardProperty org = card.getFirstProperty("ORG");
-        if (org != null) p.setCompany(org.getRawValue());
-
-        VCardProperty title = card.getFirstProperty("TITLE");
-        if (title != null) p.setJobTitle(title.getRawValue());
-
-        if (p.getFirstName() != null || p.getLastName() != null) out.add(p);
+        return out;
     }
 }

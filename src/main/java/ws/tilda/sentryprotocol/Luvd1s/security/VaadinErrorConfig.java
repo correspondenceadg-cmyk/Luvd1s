@@ -9,8 +9,8 @@ public class VaadinErrorConfig implements VaadinServiceInitListener {
 
     @Override
     public void serviceInit(ServiceInitEvent event) {
-        event.getSource().addSessionInitListener(session -> {
-            session.setErrorHandler(new VaadinAccessDeniedHandler());
+        event.getSource().addSessionInitListener(sessionInit -> {
+            sessionInit.getSession().setErrorHandler(new VaadinAccessDeniedHandler());
         });
     }
 }
