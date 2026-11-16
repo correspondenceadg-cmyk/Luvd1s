@@ -56,7 +56,7 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain uiFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/register").permitAll()
+                .requestMatchers("/register", "/health").permitAll()
                 .requestMatchers("/fonts/**", "/styles/**").permitAll()
                 .requestMatchers(
                         "/swagger-ui/**",
