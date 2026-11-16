@@ -89,7 +89,7 @@ public class ContactImporter {
             }
 
             if (!card.getEmails().isEmpty()) p.setEmail(card.getEmails().get(0).getValue());
-            if (!card.getTelephoneNumbers().isEmpty()) p.setPhone(card.getTelephoneNumbers().get(0).getValue());
+            if (!card.getTelephoneNumbers().isEmpty()) p.setPhone(card.getTelephoneNumbers().get(0).getText());
             Organization org = card.getOrganization();
             if (org != null && !org.getValues().isEmpty()) p.setCompany(String.join(", ", org.getValues()));
             if (!card.getTitles().isEmpty()) p.setJobTitle(card.getTitles().get(0).getValue());
