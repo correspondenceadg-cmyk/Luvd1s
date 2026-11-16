@@ -14,10 +14,12 @@ public class TagService {
 
     private final TagRepository tags;
     private final UserService userService;
+    private final AuditService auditService;
 
-    public TagService(TagRepository tags, UserService userService) {
+    public TagService(TagRepository tags, UserService userService, AuditService auditService) {
         this.tags = tags;
         this.userService = userService;
+        this.auditService = auditService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -36,7 +38,9 @@ public class TagService {
             t.setOwner(current);
             t.setName(name);
             t.setColor(color != null ? color : "#888888");
-            return tags.save(t);
+            Tag saved = tags.save(t);
+            auditService.log("CREATE", "Tag", saved.getId(), null);
+            return saved;
         });
     }
 
@@ -44,5 +48,6 @@ public class TagService {
     @Transactional
     public void delete(Tag tag) {
         tags.delete(tag);
+        auditService.log("DELETE", "Tag", tag.getId(), null);
     }
 }

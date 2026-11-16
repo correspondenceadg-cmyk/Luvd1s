@@ -16,13 +16,16 @@ public class InteractionService {
     private final InteractionRepository interactions;
     private final PersonService personService;
     private final UserService userService;
+    private final AuditService auditService;
 
     public InteractionService(InteractionRepository interactions,
                               PersonService personService,
-                              UserService userService) {
+                              UserService userService,
+                              AuditService auditService) {
         this.interactions = interactions;
         this.personService = personService;
         this.userService = userService;
+        this.auditService = auditService;
     }
 
     @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
@@ -30,16 +33,17 @@ public class InteractionService {
         return interactions.findByPersonIdOrderByOccurredAtDesc(person.getId());
     }
 
-    // save(CALL at T, person.lastContactedAt=T-3d) -> person.lastContactedAt=T
     @PreAuthorize("isAuthenticated() and @ownership.owns(#interaction.person)")
     @Transactional
     public Interaction save(Interaction interaction) {
+        boolean isNew = interaction.getId() == null;
         Interaction saved = interactions.save(interaction);
         Person p = saved.getPerson();
         if (p != null) {
             p.setLastContactedAt(saved.getOccurredAt());
             personService.saveAsOwner(p, p.getOwner());
         }
+        auditService.log(isNew ? "CREATE" : "UPDATE", "Interaction", saved.getId(), null);
         return saved;
     }
 
@@ -47,6 +51,7 @@ public class InteractionService {
     @Transactional
     public void delete(Interaction interaction) {
         interactions.delete(interaction);
+        auditService.log("DELETE", "Interaction", interaction.getId(), null);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -57,6 +62,7 @@ public class InteractionService {
                 return false;
             }
             interactions.delete(i);
+            auditService.log("DELETE", "Interaction", i.getId(), null);
             return true;
         }).orElse(false);
     }

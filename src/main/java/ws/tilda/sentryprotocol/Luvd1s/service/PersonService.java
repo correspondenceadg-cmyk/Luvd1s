@@ -15,10 +15,12 @@ public class PersonService {
 
     private final PersonRepository people;
     private final UserService userService;
+    private final AuditService auditService;
 
-    public PersonService(PersonRepository people, UserService userService) {
+    public PersonService(PersonRepository people, UserService userService, AuditService auditService) {
         this.people = people;
         this.userService = userService;
+        this.auditService = auditService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -38,16 +40,20 @@ public class PersonService {
     @PreAuthorize("isAuthenticated() and (#person.id == null or @ownership.owns(#person))")
     @Transactional
     public Person save(Person person) {
-        if (person.getId() == null) {
+        boolean isNew = person.getId() == null;
+        if (isNew) {
             person.setOwner(userService.getCurrentUser());
         }
-        return people.save(person);
+        Person saved = people.save(person);
+        auditService.log(isNew ? "CREATE" : "UPDATE", "Person", saved.getId(), null);
+        return saved;
     }
 
     @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
     @Transactional
     public void delete(Person person) {
         people.delete(person);
+        auditService.log("DELETE", "Person", person.getId(), null);
     }
 
     @Transactional
