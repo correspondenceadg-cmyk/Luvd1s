@@ -5,6 +5,7 @@ import ws.tilda.sentryprotocol.Luvd1s.data.User;
 import ws.tilda.sentryprotocol.Luvd1s.repository.PersonRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,71 +15,44 @@ public class PersonService {
 
     private final PersonRepository people;
     private final UserService userService;
-    private final AuditLogService auditLogService;
-    private final ObservabilityService observability;
 
-    public PersonService(PersonRepository people,
-                         UserService userService,
-                         AuditLogService auditLogService,
-                         ObservabilityService observability) {
+    public PersonService(PersonRepository people, UserService userService) {
         this.people = people;
         this.userService = userService;
-        this.auditLogService = auditLogService;
-        this.observability = observability;
     }
 
     @PreAuthorize("isAuthenticated()")
     public List<Person> findAll() {
-        User owner = userService.getCurrentUser();
-        if (owner == null) return List.of();
-        return people.findByOwnerOrderByLastNameAscFirstNameAsc(owner);
+        User current = userService.getCurrentUser();
+        if (current == null) return List.of();
+        return people.findByOwnerOrderByLastNameAscFirstNameAsc(current);
     }
 
     @PreAuthorize("isAuthenticated()")
     public Optional<Person> findById(Long id) {
-        User owner = userService.getCurrentUser();
-        if (owner == null) return Optional.empty();
-        return people.findByIdAndOwner(id, owner);
+        User current = userService.getCurrentUser();
+        if (current == null) return Optional.empty();
+        return people.findByIdAndOwner(id, current);
     }
 
-    @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
+    @PreAuthorize("isAuthenticated() and (#person.id == null or @ownership.owns(#person))")
+    @Transactional
     public Person save(Person person) {
-        User owner = userService.getCurrentUser();
-        if (owner == null) throw new IllegalStateException("Not logged in");
-
-        boolean isNew = person.getId() == null;
-        if (person.getOwner() == null) {
-            person.setOwner(owner);
+        if (person.getId() == null) {
+            person.setOwner(userService.getCurrentUser());
         }
-
-        Person saved = people.save(person);
-
-        if (isNew) {
-            observability.recordPersonCreated();
-        } else {
-            observability.recordPersonUpdated();
-        }
-
-        auditLogService.record(
-                isNew ? "PERSON_CREATE" : "PERSON_UPDATE",
-                "Person",
-                saved.getId(),
-                (isNew ? "Created " : "Updated ") + saved.getFirstName() + " " + saved.getLastName()
-        );
-
-        return saved;
+        return people.save(person);
     }
 
     @PreAuthorize("isAuthenticated() and @ownership.owns(#person)")
+    @Transactional
     public void delete(Person person) {
-        if (person == null || person.getId() == null) return;
-
-        String name = person.getFirstName() + " " + person.getLastName();
-        Long id = person.getId();
-
         people.delete(person);
-        observability.recordPersonDeleted();
+    }
 
-        auditLogService.record("PERSON_DELETE", "Person", id, "Deleted " + name);
+    @Transactional
+    public Person saveAsOwner(Person person, User owner) {
+        person.setOwner(owner);
+        return people.save(person);
     }
 }

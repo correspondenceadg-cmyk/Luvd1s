@@ -3,11 +3,10 @@ package ws.tilda.sentryprotocol.Luvd1s.service;
 import java.time.Instant;
 
 public record RequestRecord(
-        Instant timestamp,
+        Instant at,
         String method,
         String path,
-        String username,
+        String user,
         int status,
         long durationMs
-) {
-}
+) {}

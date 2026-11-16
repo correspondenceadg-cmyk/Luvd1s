@@ -3,7 +3,6 @@ package ws.tilda.sentryprotocol.Luvd1s.service;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
@@ -11,17 +10,14 @@ import java.util.List;
 public class RecentRequestsBuffer {
 
     private static final int MAX = 50;
+    private final Deque<RequestRecord> ring = new ArrayDeque<>(MAX);
 
-    private final Deque<RequestRecord> buffer = new ArrayDeque<>();
-
-    public synchronized void add(RequestRecord record) {
-        buffer.addFirst(record);
-        while (buffer.size() > MAX) {
-            buffer.removeLast();
-        }
+    public synchronized void add(RequestRecord r) {
+        if (ring.size() >= MAX) ring.pollFirst();
+        ring.addLast(r);
     }
 
     public synchronized List<RequestRecord> recent() {
-        return new ArrayList<>(buffer);
+        return List.copyOf(ring);
     }
 }
