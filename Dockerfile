@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21.0.13.1_1-jdk AS build
+FROM eclipse-temurin:21.0.13_9-jdk AS build
 WORKDIR /app
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
@@ -6,7 +6,7 @@ RUN chmod +x mvnw && ./mvnw dependency:go-offline
 COPY src src
 RUN ./mvnw package -DskipTests
 
-FROM eclipse-temurin:21.0.13.1_1-jre
+FROM eclipse-temurin:21.0.13_9-jre
 RUN groupadd -r app && useradd -r -g app -d /app -s /sbin/nologin app
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
